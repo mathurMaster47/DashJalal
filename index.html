@@ -309,6 +309,38 @@
         .mode-btn {
             min-width: 180px;
         }
+
+        #speed-selector {
+            display: none;
+            margin: 16px auto 0;
+            padding: 12px;
+            max-width: 520px;
+            background: rgba(4, 10, 24, 0.92);
+            border: 1px solid rgba(157, 255, 248, 0.65);
+            border-radius: 10px;
+            box-shadow: 0 0 18px rgba(0, 246, 255, 0.2);
+        }
+
+        #speed-selector.visible {
+            display: block;
+        }
+
+        .speed-choice {
+            background: #0b1730;
+            border: 1px solid #55f5ff;
+            color: #f7fbff;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .speed-choice.active {
+            background: #00f6ff;
+            color: #02050b;
+            border-color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -343,6 +375,13 @@
         <div id="level-select-menu" class="menu-overlay">
             <h1 style="font-size: 40px; margin-bottom: 20px;">SELECT LEVEL</h1>
             <div class="level-grid" id="level-grid"></div>
+            <div id="speed-selector" aria-live="polite">
+                <div class="customizer-label">SECRET SPEED LINK</div>
+                <button class="speed-choice" data-speed="slow" onclick="selectSpeedMode('slow')">SLOW 0.85x</button>
+                <button class="speed-choice" data-speed="normal" onclick="selectSpeedMode('normal')">NORMAL 1.0x</button>
+                <button class="speed-choice" data-speed="responsive" onclick="selectSpeedMode('responsive')">RESPONSIVE 1.1x</button>
+                <button class="small-btn" onclick="hideSpeedSelector()">HIDE</button>
+            </div>
             <div>
                 <button class="btn btn-secondary" onclick="closeLevelSelect()">BACK</button>
             </div>
@@ -416,7 +455,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v1.8.0';
+        const GAME_VERSION = 'v1.9.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -443,8 +482,14 @@
         let audioCtx = null;
         let soundEnabled = true;
         const RESPONSIVE_MODE_KEY = 'dash_responsive_mode';
+        const SPEED_MODE_KEY = 'dash_speed_mode';
         let responsiveMode = localStorage.getItem(RESPONSIVE_MODE_KEY) === 'true';
+        const validSpeedModes = ['slow', 'normal', 'responsive'];
+        let speedMode = validSpeedModes.includes(localStorage.getItem(SPEED_MODE_KEY))
+            ? localStorage.getItem(SPEED_MODE_KEY)
+            : (responsiveMode ? 'responsive' : 'normal');
         const RESPONSIVE_SPEED_MULTIPLIER = 1.1;
+        const SPEED_MULTIPLIERS = { slow: 0.85, normal: 1, responsive: RESPONSIVE_SPEED_MULTIPLIER };
         const NORMAL_TARGET_SECONDS = 60;
         const RESPONSIVE_TARGET_SECONDS = NORMAL_TARGET_SECONDS / RESPONSIVE_SPEED_MULTIPLIER;
         let phonkInterval = null;
@@ -471,20 +516,30 @@
         }
 
         function updateResponsiveModeLabels() {
-            const label = `MODE: ${responsiveMode ? 'RESPONSIVE' : 'NORMAL'}`;
+            const label = `MODE: ${speedMode === 'responsive' ? 'RESPONSIVE' : speedMode.toUpperCase()}`;
             const menuButton = document.getElementById('mode-menu-btn');
             const hudButton = document.getElementById('mode-hud-btn');
-            if (menuButton) menuButton.innerText = `${label} (${responsiveMode ? '54.5s' : '60s'})`;
+            if (menuButton) menuButton.innerText = `${label} (${(60 / SPEED_MULTIPLIERS[speedMode]).toFixed(1)}s)`;
             if (hudButton) hudButton.innerText = label;
+            document.querySelectorAll('.speed-choice').forEach((button) => {
+                button.classList.toggle('active', button.dataset.speed === speedMode);
+            });
         }
 
         function toggleResponsiveMode() {
-            responsiveMode = !responsiveMode;
+            selectSpeedMode(speedMode === 'responsive' ? 'normal' : 'responsive');
+        }
+
+        function selectSpeedMode(mode) {
+            if (!validSpeedModes.includes(mode)) return;
+            speedMode = mode;
+            responsiveMode = mode === 'responsive';
+            localStorage.setItem(SPEED_MODE_KEY, speedMode);
             localStorage.setItem(RESPONSIVE_MODE_KEY, String(responsiveMode));
             updateResponsiveModeLabels();
             if (gameState === 'PLAYING') {
                 const levelData = window.LEVELS && window.LEVELS[currentLevel];
-                if (levelData) levelSpeed = levelData.speed * 60 * (responsiveMode ? RESPONSIVE_SPEED_MULTIPLIER : 1);
+                if (levelData) levelSpeed = levelData.speed * 60 * SPEED_MULTIPLIERS[speedMode];
             }
         }
 
@@ -683,6 +738,34 @@
             { id: 'headband', name: 'Ninja Headband' }
         ];
 
+        const secretSpeedSequence = [20, 12, 17];
+        let secretSpeedIndex = 0;
+        let speedSelectorUnlocked = false;
+
+        function trackSecretSpeedSequence(level) {
+            if (level === secretSpeedSequence[secretSpeedIndex]) {
+                secretSpeedIndex += 1;
+                if (secretSpeedIndex === secretSpeedSequence.length) {
+                    secretSpeedIndex = 0;
+                    speedSelectorUnlocked = true;
+                    showSpeedSelector();
+                }
+            } else {
+                secretSpeedIndex = level === secretSpeedSequence[0] ? 1 : 0;
+            }
+        }
+
+        function showSpeedSelector() {
+            const selector = document.getElementById('speed-selector');
+            if (selector) selector.classList.add('visible');
+            updateResponsiveModeLabels();
+        }
+
+        function hideSpeedSelector() {
+            const selector = document.getElementById('speed-selector');
+            if (selector) selector.classList.remove('visible');
+        }
+
         // Stealth easter egg sequence (4, 7, 2, 9, 19)
         const easterEggSeq = [4, 7, 2, 9, 19];
         let easterEggIndex = 0;
@@ -822,7 +905,7 @@
 
             const levelData = (window.LEVELS && window.LEVELS[lvlNum]) || null;
             if (levelData) {
-                levelSpeed = levelData.speed * 60 * (responsiveMode ? RESPONSIVE_SPEED_MULTIPLIER : 1);
+                levelSpeed = levelData.speed * 60 * SPEED_MULTIPLIERS[speedMode];
                 levelLength = levelData.length;
                 levelTheme = themes[(levelData.themeIndex || 0) % themes.length];
 
@@ -835,7 +918,7 @@
             }
 
             // Fallback random generation for safety.
-            levelSpeed = (7.8 + (lvlNum * 0.15)) * 60 * (responsiveMode ? RESPONSIVE_SPEED_MULTIPLIER : 1);
+            levelSpeed = (7.8 + (lvlNum * 0.15)) * 60 * SPEED_MULTIPLIERS[speedMode];
             levelLength = 10000 + (lvlNum * 800);
             levelTheme = themes[(lvlNum - 1) % themes.length];
 
@@ -903,6 +986,7 @@
                 btn.innerText = i;
                 
                 btn.onclick = () => {
+                    trackSecretSpeedSequence(i);
                     checkEasterEgg(i);
                     if (i <= unlockedLevel) {
                         startLevel(i);
