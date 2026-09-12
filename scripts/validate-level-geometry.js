@@ -2,12 +2,13 @@ const fs = require('fs');
 const vm = require('vm');
 
 const GROUND_Y = 560;
+const VISUAL_CLEARANCE = 8;
 const context = { window: {} };
 vm.createContext(context);
 
-function overlaps(a, b) {
-  return a.x < b.x + b.w && a.x + a.w > b.x &&
-    a.y < b.y + b.h && a.y + a.h > b.y;
+function hasHorizontalConflict(spike, platform) {
+  return spike.x - VISUAL_CLEARANCE < platform.x + platform.w &&
+    spike.x + spike.w + VISUAL_CLEARANCE > platform.x;
 }
 
 for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
@@ -26,12 +27,14 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
 
   for (const spike of spikes) {
     for (const platform of platforms) {
-      if (overlaps(spike, platform)) conflicts.push({ spike, platform });
+      if (hasHorizontalConflict(spike, platform)) {
+        conflicts.push({ spike, platform });
+      }
     }
   }
 
   if (conflicts.length) {
-    throw new Error(`${file}: ${conflicts.length} spike/platform overlap(s)`);
+    throw new Error(`${file}: ${conflicts.length} spike/platform visual conflict(s)`);
   }
-  console.log(`${file}: ${platforms.length} platforms, ${spikes.length} spikes, no overlaps`);
+  console.log(`${file}: ${platforms.length} platform segments, ${spikes.length} spikes, clear`);
 }
