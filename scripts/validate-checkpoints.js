@@ -26,14 +26,16 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
 
 const source = fs.readFileSync('index.html', 'utf8');
 for (const required of [
-  "const GAME_VERSION = 'v2.7.0'",
+  "const GAME_VERSION = 'v2.8.0'",
   'let checkpointPositions = []',
+  'let checkpointSpawnPositions = []',
   'let latestCheckpointIndex = -1',
   'checkpointPositions = [0.25, 0.5, 0.75].map',
   'function retryCheckpoint()',
   'function resetLevelAttempt()',
   'const resumeX = checkpointPositions[latestCheckpointIndex]',
-  'player.x = resumeX',
+  'player.x = checkpointSpawnPositions[latestCheckpointIndex] || resumeX',
+  'checkpointSpawnPositions[latestCheckpointIndex]',
   'player.y = GROUND_Y - PLAYER_SIZE',
   'progress-display',
   'id="reset-level-btn"',
@@ -43,9 +45,15 @@ for (const required of [
 ]) {
   if (!source.includes(required)) throw new Error(`Missing checkpoint behavior: ${required}`);
 }
+if (!source.includes('while (levelObjects.some((object) =>')) {
+  throw new Error('Checkpoint spawn safety buffer is missing');
+}
+if (!source.includes('object.x < spawn + 110') || !source.includes('object.x + width > spawn - 70')) {
+  throw new Error('Checkpoint obstacle buffer is too narrow or absent');
+}
 const retryFunction = source.slice(source.indexOf('function retryCheckpoint'), source.indexOf('function resetLevelAttempt'));
 if (!retryFunction.includes('checkpointPositions[latestCheckpointIndex]') ||
-    !retryFunction.includes('player.x = resumeX') ||
+    !retryFunction.includes('player.x = checkpointSpawnPositions[latestCheckpointIndex] || resumeX') ||
     !retryFunction.includes('player.y = GROUND_Y - PLAYER_SIZE')) {
   throw new Error('Checkpoint retry does not restore checkpoint position and safe grounded state');
 }

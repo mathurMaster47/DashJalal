@@ -9,10 +9,17 @@ for (const required of [
   "localStorage.setItem('dash_unlocked_lvl', String(unlockedLevel))",
   'startLevel(nextLevel)',
   'startLevel(1)',
+  "const COMPLETED_LEVEL_KEY = 'dash_completed_lvl'",
+  'i === 1 || unlimitedCoins || i - 1 <= completedLevel',
+  'completedLevel = Math.max(completedLevel, currentLevel)',
 ]) {
   if (!source.includes(required)) {
     throw new Error(`Missing progression behavior: ${required}`);
   }
+}
+
+function canSelect(level, completedLevel, unlimitedCoins) {
+  return level === 1 || unlimitedCoins || level - 1 <= completedLevel;
 }
 
 function advance(currentLevel, unlockedLevel) {
@@ -24,6 +31,7 @@ function advance(currentLevel, unlockedLevel) {
       action: 'start-next',
     };
   }
+
   return { level: 1, unlocked: unlockedLevel, action: 'replay-first' };
 }
 
@@ -33,8 +41,11 @@ if (normal.level !== 8 || normal.unlocked !== 8 || normal.action !== 'start-next
 }
 
 const alreadyAhead = advance(7, 12);
-if (alreadyAhead.level !== 8 || alreadyAhead.unlocked !== 12) {
-  throw new Error('Existing unlock progress was not preserved');
+if (alreadyAhead.level !== 8 || alreadyAhead.unlocked !== 12 || canSelect(12, 0, false)) {
+  throw new Error('Ahead-of-progress level selection was not locked');
+}
+if (!canSelect(1, 0, false) || !canSelect(2, 1, false) || canSelect(3, 1, false) || !canSelect(20, 0, true)) {
+  throw new Error('Sequential lock or cheat bypass behavior failed');
 }
 
 const final = advance(20, 20);

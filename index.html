@@ -543,7 +543,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.7.0';
+        const GAME_VERSION = 'v2.8.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -807,7 +807,8 @@
 
         let gameState = 'MENU'; // MENU, LEVEL_SELECT, CHARACTER, PLAYING, DEAD, GAMEOVER, VICTORY
         let currentLevel = 1;
-        let unlockedLevel = parseInt(localStorage.getItem('dash_unlocked_lvl') || '1', 10);
+        const COMPLETED_LEVEL_KEY = 'dash_completed_lvl';
+        let completedLevel = Math.max(0, Math.min(20, parseInt(localStorage.getItem(COMPLETED_LEVEL_KEY) || '0', 10) || 0));
         
         // Duolingo-style avatar customization state
         let avatarConfig = JSON.parse(localStorage.getItem('dash_avatar_config') || JSON.stringify({
@@ -831,6 +832,8 @@
         if (!Array.isArray(collectedCoinIds)) collectedCoinIds = [];
         let pendingCoinIds = [];
         let unlimitedCoins = localStorage.getItem(UNLIMITED_COINS_KEY) === 'true';
+        let unlockedLevel = unlimitedCoins ? 20 : Math.max(1, Math.min(20, completedLevel + 1));
+        localStorage.setItem('dash_unlocked_lvl', String(unlockedLevel));
         let purchasedShopItems = JSON.parse(localStorage.getItem(SHOP_KEY) || '{}');
         if (!purchasedShopItems || typeof purchasedShopItems !== 'object') purchasedShopItems = {};
 
@@ -938,6 +941,7 @@
         let levelLength = 12000;
         let levelSpeed = 8.0;
         let checkpointPositions = [];
+        let checkpointSpawnPositions = [];
         let latestCheckpointIndex = -1;
         let levelTheme = { bg1: '#1f0d3d', bg2: '#0a0518', accent: '#00f0ff', spike: '#ff0055', block: '#140c2b' };
 
@@ -1065,6 +1069,7 @@
             levelObjects.length = 0;
             levelCoins.length = 0;
             checkpointPositions = [];
+            checkpointSpawnPositions = [];
             latestCheckpointIndex = -1;
 
             const levelData = (window.LEVELS && window.LEVELS[lvlNum]) || null;
@@ -1080,6 +1085,16 @@
                     for (const obstacle of levelData.obstacles) {
                         levelObjects.push(normalizeLevelObstacle(obstacle));
                     }
+                    checkpointSpawnPositions = checkpointPositions.map((position) => {
+                        let spawn = position;
+                        while (levelObjects.some((object) => {
+                            const width = object.w || 42;
+                            return object.x < spawn + 110 && object.x + width > spawn - 70;
+                        })) {
+                            spawn += 140;
+                        }
+                        return Math.min(spawn, levelLength - 160);
+                    });
                 }
                 levelCoins.push(...(Array.isArray(levelData.coins) ? levelData.coins.map(normalizeLevelCoin) : []));
                 return;
@@ -1090,6 +1105,7 @@
             levelLength = 10000 + (lvlNum * 800);
             levelTheme = themes[(lvlNum - 1) % themes.length];
             checkpointPositions = [0.25, 0.5, 0.75].map((fraction) => levelLength * fraction);
+            checkpointSpawnPositions = checkpointPositions.slice();
 
             levelObjects.push({ type: 'spike', x: 850, y: GROUND_Y, w: 42, h: 48 });
             levelCoins.push({ id: `L${currentLevel}C1`, x: 600, y: GROUND_Y - 26, r: 12, collected: false });
@@ -1158,12 +1174,12 @@
                 btn.innerText = i;
                 
                 btn.onclick = () => {
-                    if (i <= unlockedLevel) {
+                    if (i === 1 || unlimitedCoins || i - 1 <= completedLevel) {
                         startLevel(i);
                     }
                 };
 
-                if (i > unlockedLevel) {
+                if (!(i === 1 || unlimitedCoins || i - 1 <= completedLevel)) {
                     btn.classList.add('locked');
                 }
                 grid.appendChild(btn);
@@ -1360,6 +1376,7 @@
         function returnToMenu() {
             pendingCoinIds = [];
             checkpointPositions = [];
+            checkpointSpawnPositions = [];
             latestCheckpointIndex = -1;
             stopPhonkMusic();
             gameState = 'MENU';
@@ -1409,7 +1426,7 @@
                 return;
             }
             const resumeX = checkpointPositions[latestCheckpointIndex];
-            player.x = resumeX;
+            player.x = checkpointSpawnPositions[latestCheckpointIndex] || resumeX;
             player.y = GROUND_Y - PLAYER_SIZE;
             player.vy = 0;
             player.isGrounded = true;
@@ -1438,10 +1455,10 @@
 
             if (currentLevel < 20) {
                 const nextLevel = currentLevel + 1;
-                if (nextLevel > unlockedLevel) {
-                    unlockedLevel = nextLevel;
-                    localStorage.setItem('dash_unlocked_lvl', String(unlockedLevel));
-                }
+                completedLevel = Math.max(completedLevel, currentLevel);
+                unlockedLevel = unlimitedCoins ? 20 : Math.min(20, completedLevel + 1);
+                localStorage.setItem(COMPLETED_LEVEL_KEY, String(completedLevel));
+                localStorage.setItem('dash_unlocked_lvl', String(unlockedLevel));
                 startLevel(nextLevel);
             } else {
                 startLevel(1);
@@ -1481,10 +1498,10 @@
             playSound('victory');
             spawnParticles(player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE / 2, 60, levelTheme.accent);
 
-            if (currentLevel >= unlockedLevel && unlockedLevel < 20) {
-                unlockedLevel = currentLevel + 1;
-                localStorage.setItem('dash_unlocked_lvl', unlockedLevel);
-            }
+            completedLevel = Math.max(completedLevel, currentLevel);
+            unlockedLevel = unlimitedCoins ? 20 : Math.min(20, completedLevel + 1);
+            localStorage.setItem(COMPLETED_LEVEL_KEY, String(completedLevel));
+            localStorage.setItem('dash_unlocked_lvl', String(unlockedLevel));
 
             setTimeout(() => {
                 document.getElementById('menu-title').innerText = 'VICTORY!';
