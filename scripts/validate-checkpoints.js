@@ -26,18 +26,36 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
 
 const source = fs.readFileSync('index.html', 'utf8');
 for (const required of [
-  "const GAME_VERSION = 'v2.6.0'",
+  "const GAME_VERSION = 'v2.7.0'",
   'let checkpointPositions = []',
   'let latestCheckpointIndex = -1',
   'checkpointPositions = [0.25, 0.5, 0.75].map',
   'function retryCheckpoint()',
   'function resetLevelAttempt()',
+  'const resumeX = checkpointPositions[latestCheckpointIndex]',
+  'player.x = resumeX',
+  'player.y = GROUND_Y - PLAYER_SIZE',
+  'progress-display',
   'id="reset-level-btn"',
   'latestCheckpointIndex = i',
   'RUN coins held',
   'for (const coinId of pendingCoinIds)'
 ]) {
   if (!source.includes(required)) throw new Error(`Missing checkpoint behavior: ${required}`);
+}
+const retryFunction = source.slice(source.indexOf('function retryCheckpoint'), source.indexOf('function resetLevelAttempt'));
+if (!retryFunction.includes('checkpointPositions[latestCheckpointIndex]') ||
+    !retryFunction.includes('player.x = resumeX') ||
+    !retryFunction.includes('player.y = GROUND_Y - PLAYER_SIZE')) {
+  throw new Error('Checkpoint retry does not restore checkpoint position and safe grounded state');
+}
+if (!source.includes("gameState === 'GAMEOVER' && e.type !== 'mousedown'")) {
+  throw new Error('Global mousedown handler can override checkpoint retry');
+}
+if (!source.includes('function resetLevelAttempt()') ||
+    !source.includes('function retryLevel()') ||
+    !source.includes('pendingCoinIds = [];')) {
+  throw new Error('Full level reset path is missing');
 }
 if (source.includes('pendingCoinIds = [];') &&
     source.indexOf('pendingCoinIds = [];') > source.indexOf('function triggerDeath') &&

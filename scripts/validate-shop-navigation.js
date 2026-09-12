@@ -20,7 +20,7 @@ for (const required of [
   "document.getElementById('shop-menu').style.display = 'none';",
   "document.getElementById('main-menu').style.display = 'none';",
   "document.getElementById('main-menu').style.display = 'block';",
-  "const GAME_VERSION = 'v2.6.0'",
+  "const GAME_VERSION = 'v2.7.0'",
   'function drawShopItemPreview',
   'className = \'shop-preview\'',
   'const previewConfig = { ...avatarConfig, [item.type]: item.value }',

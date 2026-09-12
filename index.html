@@ -543,7 +543,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.6.0';
+        const GAME_VERSION = 'v2.7.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -1016,7 +1016,7 @@
                 if (gameState === 'PLAYING') {
                     jumpInput = true;
                     jumpBufferSeconds = responsiveMode ? 0.14 : 0;
-                } else if (gameState === 'GAMEOVER') {
+                } else if (gameState === 'GAMEOVER' && e.type !== 'mousedown') {
                     retryLevel();
                 } else if (gameState === 'VICTORY') {
                     handleMenuAction();
@@ -1408,7 +1408,8 @@
                 retryLevel();
                 return;
             }
-            player.x = checkpointPositions[latestCheckpointIndex];
+            const resumeX = checkpointPositions[latestCheckpointIndex];
+            player.x = resumeX;
             player.y = GROUND_Y - PLAYER_SIZE;
             player.vy = 0;
             player.isGrounded = true;
@@ -1419,6 +1420,8 @@
             document.getElementById('menu').style.display = 'none';
             document.getElementById('hud-top').style.display = 'flex';
             document.getElementById('hud-controls').style.display = 'block';
+            document.getElementById('progress-display').innerText =
+                `${Math.floor((resumeX / levelLength) * 100)}% • CP${latestCheckpointIndex + 1}`;
             updateCoinLabels();
             startPhonkMusic();
         }
