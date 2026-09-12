@@ -60,7 +60,7 @@ for (const required of [
   'id="coin-display"',
   'id="shop-menu"',
   'const SHOP_ITEMS = [',
-  "const GAME_VERSION = 'v2.2.0'"
+  "const GAME_VERSION = 'v2.2.1'"
 ]) {
   if (!source.includes(required)) throw new Error(`Missing rewards behavior: ${required}`);
 }

@@ -452,15 +452,6 @@
                 <canvas id="previewCanvas" width="130" height="130" style="background: rgba(11,5,24,0.8); border-radius: 18px; border: 2px solid #00f0ff; box-shadow: 0 0 25px rgba(0,240,255,0.4);"></canvas>
             </div>
 
-            <div id="shop-menu" class="menu-overlay">
-                <h1 style="font-size: 40px; margin-bottom: 8px;">NEON SHOP</h1>
-                <p>Spend collected coins on permanent avatar upgrades.</p>
-                <div class="hud-text" id="shop-coin-display" style="display: inline-block;">COINS: 0</div>
-                <div class="shop-grid" id="shop-grid"></div>
-                <div id="shop-feedback" aria-live="polite"></div>
-                <button class="btn btn-secondary" onclick="closeShop()">BACK</button>
-            </div>
-
             <div style="max-height: 260px; overflow-y: auto; padding-right: 4px; margin-bottom: 16px;">
                 <div class="customizer-section">
                     <span class="customizer-label">BODY COLOR</span>
@@ -481,6 +472,15 @@
             <div>
                 <button class="btn btn-secondary" style="font-size: 18px; padding: 10px 32px;" onclick="closeCharacterSelect()">SAVE & BACK</button>
             </div>
+        </div>
+
+        <div id="shop-menu" class="menu-overlay">
+            <h1 style="font-size: 40px; margin-bottom: 8px;">NEON SHOP</h1>
+            <p>Spend collected coins on permanent avatar upgrades.</p>
+            <div class="hud-text" id="shop-coin-display" style="display: inline-block;">COINS: 0</div>
+            <div class="shop-grid" id="shop-grid"></div>
+            <div id="shop-feedback" aria-live="polite"></div>
+            <button class="btn btn-secondary" onclick="closeShop()">BACK</button>
         </div>
 
         <!-- Game Over / Victory Menu -->
@@ -520,7 +520,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.2.0';
+        const GAME_VERSION = 'v2.2.1';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
