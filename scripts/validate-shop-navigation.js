@@ -20,7 +20,11 @@ for (const required of [
   "document.getElementById('shop-menu').style.display = 'none';",
   "document.getElementById('main-menu').style.display = 'none';",
   "document.getElementById('main-menu').style.display = 'block';",
-  "const GAME_VERSION = 'v2.2.1'"
+  "const GAME_VERSION = 'v2.2.2'",
+  'function drawShopItemPreview',
+  'className = \'shop-preview\'',
+  'const previewConfig = { ...avatarConfig, [item.type]: item.value }',
+  'drawAvatarFeatures(previewCtx, 0, 0, size, previewConfig)'
 ]) {
   if (!source.includes(required)) throw new Error(`Missing shop navigation wiring: ${required}`);
 }
@@ -32,6 +36,13 @@ if (!source.includes('id="shop-grid"') ||
     !source.includes("document.getElementById('shop-grid')") ||
     !source.includes("'shop-coin-display'")) {
   throw new Error('Shop render selectors are missing');
+}
+for (const item of ['Neon Shades', 'Cyborg Eyes', 'Royal Crown', 'Bass Headphones', 'Prism Visor', 'Signal Headband']) {
+  if (!source.includes(item)) throw new Error(`Missing preview product: ${item}`);
+}
+const previewFunction = source.slice(source.indexOf('function drawShopItemPreview'), source.indexOf('function purchaseOrEquipShopItem'));
+if (previewFunction.includes('avatarConfig[') || previewFunction.includes('localStorage.setItem')) {
+  throw new Error('Preview path appears to mutate equipped state');
 }
 
 console.log('Shop navigation checks passed: top-level overlay, visible main-menu button, open/close transitions, and render selectors.');

@@ -206,8 +206,22 @@
             color: #fff;
             padding: 14px;
             text-align: left;
+            display: grid;
+            grid-template-columns: 76px 1fr;
+            gap: 12px;
+            align-items: center;
         }
 
+        .shop-preview {
+            width: 76px;
+            height: 76px;
+            background: radial-gradient(circle, rgba(0, 246, 255, 0.2), rgba(4, 8, 20, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            box-shadow: 0 0 16px rgba(0, 246, 255, 0.35);
+        }
+
+        .shop-item-content { min-width: 0; }
         .shop-item strong { color: #ffe66d; }
         .shop-item small { display: block; color: #d9e7ff; margin: 4px 0 10px; }
         .shop-item button {
@@ -520,7 +534,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.2.1';
+        const GAME_VERSION = 'v2.2.2';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -1168,14 +1182,43 @@
                 const owned = isShopItemOwned(item);
                 const card = document.createElement('div');
                 card.className = 'shop-item';
-                card.innerHTML = `<strong>${item.name}</strong><small>${item.type === 'eyes' ? 'Face expression' : 'Accessory'} • ${item.price} coins</small>`;
+                const preview = document.createElement('canvas');
+                preview.className = 'shop-preview';
+                preview.width = 76;
+                preview.height = 76;
+                preview.setAttribute('aria-label', `${item.name} preview`);
+                drawShopItemPreview(preview, item);
+                card.appendChild(preview);
+                const content = document.createElement('div');
+                content.className = 'shop-item-content';
+                content.innerHTML = `<strong>${item.name}</strong><small>${item.type === 'eyes' ? 'Face expression' : 'Accessory'} • ${item.price} coins</small>`;
                 const button = document.createElement('button');
                 button.innerText = owned ? ((avatarConfig[item.type] === item.value) ? 'EQUIPPED' : 'EQUIP') : `BUY ${item.price}`;
                 button.disabled = owned && avatarConfig[item.type] === item.value;
                 button.onclick = () => purchaseOrEquipShopItem(item);
-                card.appendChild(button);
+                content.appendChild(button);
+                card.appendChild(content);
                 grid.appendChild(card);
             });
+        }
+
+        function drawShopItemPreview(previewCanvas, item) {
+            const previewCtx = previewCanvas.getContext('2d');
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            const previewConfig = { ...avatarConfig, [item.type]: item.value };
+            previewCtx.save();
+            previewCtx.translate(previewCanvas.width / 2, previewCanvas.height / 2 + 4);
+            previewCtx.fillStyle = previewConfig.color;
+            previewCtx.shadowColor = previewConfig.color;
+            previewCtx.shadowBlur = 12;
+            const size = 42;
+            previewCtx.fillRect(-size / 2, -size / 2, size, size);
+            previewCtx.shadowBlur = 0;
+            previewCtx.strokeStyle = '#ffffff';
+            previewCtx.lineWidth = 2;
+            previewCtx.strokeRect(-size / 2, -size / 2, size, size);
+            drawAvatarFeatures(previewCtx, 0, 0, size, previewConfig);
+            previewCtx.restore();
         }
 
         function purchaseOrEquipShopItem(item) {
