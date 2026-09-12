@@ -378,7 +378,7 @@
             <h1 id="menu-title">FAILED</h1>
             <p id="menu-subtitle">Press [SPACE] or Click to Retry</p>
             <div>
-                <button class="btn" id="start-btn" onclick="retryLevel()">RETRY</button>
+                <button class="btn" id="start-btn" onclick="handleMenuAction()">RETRY</button>
             </div>
         </div>
     </div>
@@ -410,7 +410,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v1.6.0';
+        const GAME_VERSION = 'v1.7.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -750,8 +750,10 @@
             if (e.type === 'mousedown' || e.code === 'Space' || e.code === 'ArrowUp') {
                 if (gameState === 'PLAYING') {
                     jumpInput = true;
-                } else if (gameState === 'GAMEOVER' || gameState === 'VICTORY') {
+                } else if (gameState === 'GAMEOVER') {
                     retryLevel();
+                } else if (gameState === 'VICTORY') {
+                    handleMenuAction();
                 }
             }
         }
@@ -1014,6 +1016,24 @@
 
         function retryLevel() {
             startLevel(currentLevel);
+        }
+
+        function handleMenuAction() {
+            if (gameState !== 'VICTORY') {
+                retryLevel();
+                return;
+            }
+
+            if (currentLevel < 20) {
+                const nextLevel = currentLevel + 1;
+                if (nextLevel > unlockedLevel) {
+                    unlockedLevel = nextLevel;
+                    localStorage.setItem('dash_unlocked_lvl', String(unlockedLevel));
+                }
+                startLevel(nextLevel);
+            } else {
+                startLevel(1);
+            }
         }
 
         function triggerDeath() {
