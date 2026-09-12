@@ -63,15 +63,15 @@
         }
 
         .hud-text {
-            color: #f7fbff;
+            color: #ffffff;
             background: rgba(2, 7, 16, 0.45);
-            border: 1px solid rgba(157, 255, 248, 0.28);
+            border: 1px solid rgba(255, 255, 255, 0.55);
             border-radius: 8px;
             padding: 8px 14px;
             font-size: 24px;
             font-weight: 800;
             letter-spacing: 1.5px;
-            text-shadow: 0 0 8px #00f6ff, 0 0 20px rgba(255, 0, 136, 0.75);
+            text-shadow: 0 0 8px #00f6ff, 3px 0 0 #ff0088, -3px 0 0 #a7ff3f;
         }
 
         .menu-overlay {
@@ -97,8 +97,11 @@
             font-size: 64px;
             font-weight: 900;
             letter-spacing: 10px;
-            color: #9dfff8;
-            text-shadow: 3px 0 #ff0088, 0 0 18px #00f6ff, 0 0 45px rgba(0, 246, 255, 0.8);
+            background: linear-gradient(90deg, #00f6ff 0%, #a7ff3f 30%, #ffe66d 52%, #ff8a00 70%, #ff0088 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 12px rgba(0, 246, 255, 0.95), 0 0 24px rgba(255, 0, 136, 0.8), 0 0 40px rgba(167, 255, 63, 0.45);
             margin-bottom: 6px;
         }
 
@@ -135,7 +138,7 @@
         }
 
         .btn-secondary {
-            background: linear-gradient(135deg, #26334d 0%, #101827 100%);
+            background: linear-gradient(135deg, #172640 0%, #241536 50%, #1d351f 100%);
             color: #f7fbff;
             box-shadow: 0 0 16px rgba(0, 246, 255, 0.22);
             font-size: 20px;
@@ -162,8 +165,8 @@
         }
 
         .level-btn, .char-btn {
-            background: #0b1730;
-            border: 2px solid #55f5ff;
+            background: linear-gradient(135deg, #0b1730 0%, #241336 55%, #102b24 100%);
+            border: 2px solid #a7ff3f;
             color: #fff;
             font-size: 20px;
             font-weight: 800;
@@ -180,16 +183,16 @@
         }
 
         .level-btn:hover:not(.locked), .char-btn:hover {
-            background: #00f0ff;
+            background: linear-gradient(135deg, #00f6ff, #ff0088, #a7ff3f);
             color: #0b0518;
             transform: scale(1.05);
             box-shadow: 0 0 20px #00f0ff;
         }
 
         .char-btn.active {
-            background: #9333ea;
-            border-color: #fff;
-            box-shadow: 0 0 25px #9333ea;
+            background: linear-gradient(135deg, #ff0088, #7c4dff, #00f6ff);
+            border-color: #ffffff;
+            box-shadow: 0 0 25px #ff0088, 0 0 35px rgba(0, 246, 255, 0.55);
         }
 
         .level-btn.locked {
@@ -465,7 +468,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.0.0';
+        const GAME_VERSION = 'v2.1.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
