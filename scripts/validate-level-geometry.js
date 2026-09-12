@@ -2,7 +2,12 @@ const fs = require('fs');
 const vm = require('vm');
 
 const GROUND_Y = 560;
+const PLAYER_SIZE = 44;
+const GRAVITY = 0.95;
+const SPRING_BOOST = -15.5 * 1.35;
 const VISUAL_CLEARANCE = 8;
+const SPRING_CORRIDOR_START = 220;
+const SPRING_CORRIDOR_END = 520;
 const context = { window: {} };
 vm.createContext(context);
 const signatures = new Set();
@@ -40,9 +45,28 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
   const spikes = level.obstacles
     .filter((obstacle) => obstacle.type === 'spike')
     .map((spike) => ({ ...spike, y: GROUND_Y - spike.h }));
+  const pads = level.obstacles.filter((obstacle) => obstacle.type === 'pad');
   const conflicts = [];
   if (!platforms.length) throw new Error(`${file}: authored layout has no platform surfaces`);
   if (!spikes.length) throw new Error(`${file}: authored layout has no spike challenge`);
+  for (const pad of pads) {
+    const flightFrames = Math.ceil((-2 * SPRING_BOOST) / GRAVITY);
+    const expectedLandingX = pad.x + (level.speed * flightFrames);
+    const corridorStart = pad.x + SPRING_CORRIDOR_START;
+    const corridorEnd = pad.x + SPRING_CORRIDOR_END;
+    const corridorSpikes = spikes.filter((spike) =>
+      spike.x < corridorEnd && spike.x + spike.w > corridorStart
+    );
+    if (corridorSpikes.length) {
+      throw new Error(`${file}: spring at x=${pad.x} launches into ${corridorSpikes.length} spike(s)`);
+    }
+    if (corridorEnd >= level.length - PLAYER_SIZE) {
+      throw new Error(`${file}: spring at x=${pad.x} has no safe landing terrain before level end`);
+    }
+    if (expectedLandingX < corridorStart || expectedLandingX > corridorEnd) {
+      throw new Error(`${file}: spring at x=${pad.x} expected landing x=${expectedLandingX.toFixed(0)} is outside its safe corridor`);
+    }
+  }
   const minimumPlatformWidth = Math.min(...platforms.map((platform) => platform.w));
   const averagePlatformWidth = platforms.reduce((sum, platform) => sum + platform.w, 0) / platforms.length;
   if (minimumPlatformWidth < 80) throw new Error(`${file}: platform segment is too small (${minimumPlatformWidth}px)`);
@@ -68,5 +92,5 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
   if (conflicts.length) {
     throw new Error(`${file}: ${conflicts.length} spike/platform visual conflict(s)`);
   }
-  console.log(`${file}: ${platforms.length} platform segments, ${spikes.length} spikes, clear`);
+  console.log(`${file}: ${platforms.length} platform segments, ${spikes.length} spikes, ${pads.length} springs, clear`);
 }

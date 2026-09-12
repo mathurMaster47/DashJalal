@@ -42,7 +42,7 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
 
 const source = fs.readFileSync('index.html', 'utf8');
 for (const required of [
-  "const GAME_VERSION = 'v2.9.1'",
+  "const GAME_VERSION = 'v2.9.2'",
   'let checkpointPositions = []',
   'let checkpointSpawnPositions = []',
   'let latestCheckpointIndex = -1',
