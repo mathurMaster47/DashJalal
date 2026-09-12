@@ -305,6 +305,10 @@
             background: #00f0ff;
             color: #0b0518;
         }
+
+        .mode-btn {
+            min-width: 180px;
+        }
     </style>
 </head>
 <body>
@@ -319,6 +323,7 @@
         </div>
 
         <div id="hud-controls">
+            <button class="small-btn mode-btn" onclick="toggleResponsiveMode()" id="mode-hud-btn"></button>
             <button class="small-btn" onclick="returnToMenu()">MENU</button>
         </div>
 
@@ -330,6 +335,7 @@
                 <button class="btn" onclick="openLevelSelect()">PLAY</button><br>
                 <button class="btn btn-secondary" onclick="openCharacterSelect()">CHARACTER</button>
                 <button class="btn btn-secondary" onclick="toggleSound()" id="sound-btn">SOUND: ON</button>
+                <button class="btn btn-secondary mode-btn" onclick="toggleResponsiveMode()" id="mode-menu-btn"></button>
             </div>
         </div>
 
@@ -410,7 +416,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v1.7.0';
+        const GAME_VERSION = 'v1.8.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -436,6 +442,11 @@
 
         let audioCtx = null;
         let soundEnabled = true;
+        const RESPONSIVE_MODE_KEY = 'dash_responsive_mode';
+        let responsiveMode = localStorage.getItem(RESPONSIVE_MODE_KEY) === 'true';
+        const RESPONSIVE_SPEED_MULTIPLIER = 1.1;
+        const NORMAL_TARGET_SECONDS = 60;
+        const RESPONSIVE_TARGET_SECONDS = NORMAL_TARGET_SECONDS / RESPONSIVE_SPEED_MULTIPLIER;
         let phonkInterval = null;
         let step = 0;
 
@@ -458,6 +469,26 @@
                 phonkInterval = null;
             }
         }
+
+        function updateResponsiveModeLabels() {
+            const label = `MODE: ${responsiveMode ? 'RESPONSIVE' : 'NORMAL'}`;
+            const menuButton = document.getElementById('mode-menu-btn');
+            const hudButton = document.getElementById('mode-hud-btn');
+            if (menuButton) menuButton.innerText = `${label} (${responsiveMode ? '54.5s' : '60s'})`;
+            if (hudButton) hudButton.innerText = label;
+        }
+
+        function toggleResponsiveMode() {
+            responsiveMode = !responsiveMode;
+            localStorage.setItem(RESPONSIVE_MODE_KEY, String(responsiveMode));
+            updateResponsiveModeLabels();
+            if (gameState === 'PLAYING') {
+                const levelData = window.LEVELS && window.LEVELS[currentLevel];
+                if (levelData) levelSpeed = levelData.speed * 60 * (responsiveMode ? RESPONSIVE_SPEED_MULTIPLIER : 1);
+            }
+        }
+
+        updateResponsiveModeLabels();
 
         function startPhonkMusic() {
             if (!soundEnabled || phonkInterval) return;
@@ -744,12 +775,14 @@
         };
 
         let jumpInput = false;
+        let jumpBufferSeconds = 0;
 
         function triggerInput(e) {
             initAudio();
             if (e.type === 'mousedown' || e.code === 'Space' || e.code === 'ArrowUp') {
                 if (gameState === 'PLAYING') {
                     jumpInput = true;
+                    jumpBufferSeconds = responsiveMode ? 0.14 : 0;
                 } else if (gameState === 'GAMEOVER') {
                     retryLevel();
                 } else if (gameState === 'VICTORY') {
@@ -789,7 +822,7 @@
 
             const levelData = (window.LEVELS && window.LEVELS[lvlNum]) || null;
             if (levelData) {
-                levelSpeed = levelData.speed * 60;
+                levelSpeed = levelData.speed * 60 * (responsiveMode ? RESPONSIVE_SPEED_MULTIPLIER : 1);
                 levelLength = levelData.length;
                 levelTheme = themes[(levelData.themeIndex || 0) % themes.length];
 
@@ -802,7 +835,7 @@
             }
 
             // Fallback random generation for safety.
-            levelSpeed = (7.8 + (lvlNum * 0.15)) * 60;
+            levelSpeed = (7.8 + (lvlNum * 0.15)) * 60 * (responsiveMode ? RESPONSIVE_SPEED_MULTIPLIER : 1);
             levelLength = 10000 + (lvlNum * 800);
             levelTheme = themes[(lvlNum - 1) % themes.length];
 
@@ -999,6 +1032,7 @@
             player.reset();
             cameraX = 0;
             jumpInput = false;
+            jumpBufferSeconds = 0;
             particles.length = 0;
             gameState = 'PLAYING';
 
@@ -1080,6 +1114,8 @@
         }
 
         function update(deltaSeconds) {
+            const physicsScale = deltaSeconds * 60;
+            jumpBufferSeconds = Math.max(0, jumpBufferSeconds - deltaSeconds);
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.x += p.vx;
@@ -1106,17 +1142,18 @@
                 if (player.trail[i].life <= 0) player.trail.splice(i, 1);
             }
 
-            if (jumpInput) {
+            if (jumpInput || jumpBufferSeconds > 0) {
                 if (player.isGrounded) {
                     player.vy = JUMP_FORCE;
                     player.isGrounded = false;
                     playSound('jump');
+                    jumpBufferSeconds = 0;
                 }
             }
             jumpInput = false;
 
-            player.vy += GRAVITY;
-            player.y += player.vy;
+            player.vy += GRAVITY * physicsScale;
+            player.y += player.vy * physicsScale;
 
             if (player.y >= GROUND_Y - PLAYER_SIZE) {
                 player.y = GROUND_Y - PLAYER_SIZE;
