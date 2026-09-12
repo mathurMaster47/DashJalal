@@ -5,7 +5,8 @@ const GROUND_Y = 560;
 const PLAYER_SIZE = 44;
 const GRAVITY = 0.95;
 const SPRING_BOOST = -15.5 * 1.35;
-const SPRING_HORIZONTAL_BOOST = 12;
+const SPRING_HORIZONTAL_BOOST = 24;
+const SPRING_PROTECTION_SECONDS = 1.0;
 const VISUAL_CLEARANCE = 8;
 const SPRING_CORRIDOR_START = 220;
 const SPRING_CORRIDOR_END = 520;
@@ -57,7 +58,7 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
       let vy = SPRING_BOOST;
       let landingX = x;
       const flightSpikes = [];
-      for (let frame = 0; frame < 70; frame += 1) {
+      for (let frame = 0; frame < 60; frame += 1) {
         x += (level.speed * 60 * speedMultiplier) / 60 + SPRING_HORIZONTAL_BOOST;
         vy += GRAVITY;
         y += vy;
@@ -69,7 +70,8 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
         const playerBox = { x, y, w: PLAYER_SIZE, h: PLAYER_SIZE };
         for (const spike of spikes) {
           const spikeBox = { x: spike.x, y: GROUND_Y - spike.h, w: spike.w, h: spike.h };
-          if (playerBox.x + playerBox.w - 8 > spikeBox.x &&
+          const protectionActive = frame * (1 / 60) < SPRING_PROTECTION_SECONDS;
+          if (!protectionActive && playerBox.x + playerBox.w - 8 > spikeBox.x &&
               playerBox.x + 8 < spikeBox.x + spikeBox.w &&
               playerBox.y + playerBox.h - 8 > spikeBox.y) {
             flightSpikes.push(spike.x);

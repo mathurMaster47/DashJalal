@@ -544,7 +544,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.9.3';
+        const GAME_VERSION = 'v2.9.4';
         const CHECKPOINT_PROTECTION_SECONDS = 3;
         document.getElementById('version-label').textContent = GAME_VERSION;
 
@@ -804,7 +804,8 @@
 
         const GRAVITY = 0.95;
         const JUMP_FORCE = -15.5;
-        const SPRING_HORIZONTAL_BOOST = 12;
+        const SPRING_HORIZONTAL_BOOST = 24;
+        const SPRING_PROTECTION_SECONDS = 1.0;
         const GROUND_Y = 560;
         const PLAYER_SIZE = 44;
 
@@ -947,6 +948,7 @@
         let checkpointSpawnPositions = [];
         let latestCheckpointIndex = -1;
         let checkpointProtectionSeconds = 0;
+        let springProtectionSeconds = 0;
         let levelTheme = { bg1: '#1f0d3d', bg2: '#0a0518', accent: '#00f0ff', spike: '#ff0055', block: '#140c2b' };
 
         const themes = [
@@ -1076,6 +1078,7 @@
             checkpointSpawnPositions = [];
             latestCheckpointIndex = -1;
             checkpointProtectionSeconds = 0;
+            springProtectionSeconds = 0;
 
             const levelData = (window.LEVELS && window.LEVELS[lvlNum]) || null;
             if (levelData) {
@@ -1384,6 +1387,7 @@
             checkpointSpawnPositions = [];
             latestCheckpointIndex = -1;
             checkpointProtectionSeconds = 0;
+            springProtectionSeconds = 0;
             stopPhonkMusic();
             gameState = 'MENU';
             document.getElementById('hud-top').style.display = 'none';
@@ -1400,6 +1404,7 @@
             currentLevel = lvl;
             pendingCoinIds = [];
             checkpointProtectionSeconds = 0;
+            springProtectionSeconds = 0;
             generateLevel(currentLevel);
             player.reset();
             cameraX = 0;
@@ -1442,6 +1447,7 @@
             jumpInput = false;
             jumpBufferSeconds = 0;
             checkpointProtectionSeconds = CHECKPOINT_PROTECTION_SECONDS;
+            springProtectionSeconds = 0;
             gameState = 'PLAYING';
             document.getElementById('menu').style.display = 'none';
             document.getElementById('hud-top').style.display = 'flex';
@@ -1454,6 +1460,7 @@
 
         function resetLevelAttempt() {
             checkpointProtectionSeconds = 0;
+            springProtectionSeconds = 0;
             document.getElementById('protection-display').style.display = 'none';
             retryLevel();
         }
@@ -1478,6 +1485,7 @@
 
         function triggerDeath() {
             if (gameState !== 'PLAYING') return;
+            springProtectionSeconds = 0;
             if (checkpointProtectionSeconds > 0) return;
             gameState = 'DEAD';
             stopPhonkMusic();
@@ -1544,11 +1552,13 @@
             if (gameState !== 'PLAYING') return;
 
             checkpointProtectionSeconds = Math.max(0, checkpointProtectionSeconds - deltaSeconds);
+            springProtectionSeconds = Math.max(0, springProtectionSeconds - deltaSeconds);
             const protectionDisplay = document.getElementById('protection-display');
             if (protectionDisplay) {
-                protectionDisplay.style.display = checkpointProtectionSeconds > 0 ? 'block' : 'none';
-                protectionDisplay.innerText = checkpointProtectionSeconds > 0
-                    ? `PROTECTED ${checkpointProtectionSeconds.toFixed(1)}s`
+                const protectedSeconds = Math.max(checkpointProtectionSeconds, springProtectionSeconds);
+                protectionDisplay.style.display = protectedSeconds > 0 ? 'block' : 'none';
+                protectionDisplay.innerText = protectedSeconds > 0
+                    ? `${springProtectionSeconds > 0 ? 'SPRING BOOST' : 'PROTECTED'} ${protectedSeconds.toFixed(1)}s`
                     : '';
             }
 
@@ -1620,7 +1630,7 @@
 
                 if (obj.x < cameraX - 100 || obj.x > cameraX + BASE_WIDTH + 100) continue;
 
-                if (checkpointProtectionSeconds > 0) continue;
+                if (checkpointProtectionSeconds > 0 || springProtectionSeconds > 0) continue;
                 if (obj.type === 'spike') {
                     const margin = 8;
                     if (player.x + PLAYER_SIZE - margin > obj.x &&
@@ -1644,6 +1654,7 @@
                     if (checkCollision(pBox, { x: obj.x, y: GROUND_Y - obj.h, w: obj.w, h: obj.h })) {
                         player.vy = JUMP_FORCE * 1.35;
                         player.x += SPRING_HORIZONTAL_BOOST * physicsScale;
+                        springProtectionSeconds = SPRING_PROTECTION_SECONDS;
                         player.isGrounded = false;
                         playSound('pad');
                         spawnParticles(obj.x + obj.w / 2, GROUND_Y - 5, 15, levelTheme.accent);
@@ -1910,7 +1921,8 @@
             }
             ctx.globalAlpha = 1.0;
 
-            if (gameState !== 'DEAD' && (checkpointProtectionSeconds <= 0 || Math.floor(checkpointProtectionSeconds * 10) % 2 === 0)) {
+            const activeProtectionSeconds = Math.max(checkpointProtectionSeconds, springProtectionSeconds);
+            if (gameState !== 'DEAD' && (activeProtectionSeconds <= 0 || Math.floor(activeProtectionSeconds * 10) % 2 === 0)) {
                 ctx.save();
                 ctx.translate(player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE / 2);
                 ctx.rotate((player.rotation * Math.PI) / 180);

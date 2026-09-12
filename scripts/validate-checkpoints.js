@@ -42,7 +42,7 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
 
 const source = fs.readFileSync('index.html', 'utf8');
 for (const required of [
-  "const GAME_VERSION = 'v2.9.3'",
+  "const GAME_VERSION = 'v2.9.4'",
   'let checkpointPositions = []',
   'let checkpointSpawnPositions = []',
   'let latestCheckpointIndex = -1',
@@ -59,7 +59,7 @@ for (const required of [
   'checkpointProtectionSeconds = Math.max(0, checkpointProtectionSeconds - deltaSeconds)',
   'if (checkpointProtectionSeconds > 0) return',
   'PROTECTED',
-  'Math.floor(checkpointProtectionSeconds * 10) % 2',
+  'Math.floor(activeProtectionSeconds * 10) % 2',
   'progress-display',
   'id="reset-level-btn"',
   'latestCheckpointIndex = i',
