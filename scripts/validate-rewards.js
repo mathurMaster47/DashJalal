@@ -60,7 +60,7 @@ for (const required of [
   'id="coin-display"',
   'id="shop-menu"',
   'const SHOP_ITEMS = [',
-  "const GAME_VERSION = 'v2.5.0'",
+  "const GAME_VERSION = 'v2.6.0'",
   "const REWARDS_MIGRATION_KEY = 'dash_rewards_migration'",
   "const REWARDS_MIGRATION_VERSION = 'v2.4.0'",
   "const UNLIMITED_COINS_KEY = 'dash_unlimited_coins'",

@@ -510,7 +510,8 @@
             <h1 id="menu-title">FAILED</h1>
             <p id="menu-subtitle">Press [SPACE] or Click to Retry</p>
             <div>
-                <button class="btn" id="start-btn" onclick="handleMenuAction()">RETRY</button>
+                <button class="btn" id="start-btn" onclick="handleMenuAction()">RETRY CHECKPOINT</button>
+                <button class="btn btn-secondary" id="reset-level-btn" onclick="resetLevelAttempt()">RESET LEVEL</button>
             </div>
         </div>
     </div>
@@ -542,7 +543,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.5.0';
+        const GAME_VERSION = 'v2.6.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -936,6 +937,8 @@
         let cameraX = 0;
         let levelLength = 12000;
         let levelSpeed = 8.0;
+        let checkpointPositions = [];
+        let latestCheckpointIndex = -1;
         let levelTheme = { bg1: '#1f0d3d', bg2: '#0a0518', accent: '#00f0ff', spike: '#ff0055', block: '#140c2b' };
 
         const themes = [
@@ -1061,12 +1064,17 @@
         function generateLevel(lvlNum) {
             levelObjects.length = 0;
             levelCoins.length = 0;
+            checkpointPositions = [];
+            latestCheckpointIndex = -1;
 
             const levelData = (window.LEVELS && window.LEVELS[lvlNum]) || null;
             if (levelData) {
                 levelSpeed = levelData.speed * 60 * SPEED_MULTIPLIERS[speedMode];
                 levelLength = levelData.length;
                 levelTheme = themes[(levelData.themeIndex || 0) % themes.length];
+                checkpointPositions = Array.isArray(levelData.checkpoints)
+                    ? levelData.checkpoints
+                    : [0.25, 0.5, 0.75].map((fraction) => levelLength * fraction);
 
                 if (Array.isArray(levelData.obstacles)) {
                     for (const obstacle of levelData.obstacles) {
@@ -1081,6 +1089,7 @@
             levelSpeed = (7.8 + (lvlNum * 0.15)) * 60 * SPEED_MULTIPLIERS[speedMode];
             levelLength = 10000 + (lvlNum * 800);
             levelTheme = themes[(lvlNum - 1) % themes.length];
+            checkpointPositions = [0.25, 0.5, 0.75].map((fraction) => levelLength * fraction);
 
             levelObjects.push({ type: 'spike', x: 850, y: GROUND_Y, w: 42, h: 48 });
             levelCoins.push({ id: `L${currentLevel}C1`, x: 600, y: GROUND_Y - 26, r: 12, collected: false });
@@ -1350,6 +1359,8 @@
 
         function returnToMenu() {
             pendingCoinIds = [];
+            checkpointPositions = [];
+            latestCheckpointIndex = -1;
             stopPhonkMusic();
             gameState = 'MENU';
             document.getElementById('hud-top').style.display = 'none';
@@ -1381,6 +1392,7 @@
             document.getElementById('hud-controls').style.display = 'block';
             document.getElementById('level-display').innerText = `LEVEL ${currentLevel}`;
             document.getElementById('progress-display').innerText = '0%';
+            document.getElementById('reset-level-btn').style.display = 'none';
             updateCoinLabels();
 
             startPhonkMusic();
@@ -1391,9 +1403,33 @@
             startLevel(currentLevel);
         }
 
+        function retryCheckpoint() {
+            if (latestCheckpointIndex < 0) {
+                retryLevel();
+                return;
+            }
+            player.x = checkpointPositions[latestCheckpointIndex];
+            player.y = GROUND_Y - PLAYER_SIZE;
+            player.vy = 0;
+            player.isGrounded = true;
+            cameraX = player.x - 220;
+            jumpInput = false;
+            jumpBufferSeconds = 0;
+            gameState = 'PLAYING';
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('hud-top').style.display = 'flex';
+            document.getElementById('hud-controls').style.display = 'block';
+            updateCoinLabels();
+            startPhonkMusic();
+        }
+
+        function resetLevelAttempt() {
+            retryLevel();
+        }
+
         function handleMenuAction() {
             if (gameState !== 'VICTORY') {
-                retryLevel();
+                retryCheckpoint();
                 return;
             }
 
@@ -1411,8 +1447,6 @@
 
         function triggerDeath() {
             if (gameState !== 'PLAYING') return;
-            pendingCoinIds = [];
-            updateCoinLabels();
             gameState = 'DEAD';
             stopPhonkMusic();
             playSound('death');
@@ -1421,8 +1455,11 @@
             setTimeout(() => {
                 gameState = 'GAMEOVER';
                 document.getElementById('menu-title').innerText = 'FAILED';
-                document.getElementById('menu-subtitle').innerText = `Reached ${Math.floor((player.x / levelLength) * 100)}%`;
-                document.getElementById('start-btn').innerText = 'RETRY';
+                document.getElementById('menu-subtitle').innerText = latestCheckpointIndex >= 0
+                    ? `Checkpoint ${latestCheckpointIndex + 1} reached • RUN coins held: +${pendingCoinIds.length}`
+                    : `Reached ${Math.floor((player.x / levelLength) * 100)}% • RUN coins held: +${pendingCoinIds.length}`;
+                document.getElementById('start-btn').innerText = latestCheckpointIndex >= 0 ? 'RETRY CHECKPOINT' : 'RETRY LEVEL';
+                document.getElementById('reset-level-btn').style.display = 'inline-block';
                 document.getElementById('menu').style.display = 'block';
             }, 600);
         }
@@ -1517,6 +1554,12 @@
 
             const pBox = { x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
 
+            for (let i = latestCheckpointIndex + 1; i < checkpointPositions.length; i++) {
+                if (player.x >= checkpointPositions[i]) {
+                    latestCheckpointIndex = i;
+                }
+            }
+
             for (const coin of levelCoins) {
                 if (coin.collected) continue;
                 const coinBox = { x: coin.x - coin.r, y: coin.y - coin.r, w: coin.r * 2, h: coin.r * 2 };
@@ -1566,7 +1609,7 @@
             }
 
             const progress = Math.min(100, Math.floor((player.x / levelLength) * 100));
-            document.getElementById('progress-display').innerText = `${progress}%`;
+            document.getElementById('progress-display').innerText = `${progress}%${latestCheckpointIndex >= 0 ? ` • CP${latestCheckpointIndex + 1}` : ''}`;
 
             if (player.x >= levelLength) {
                 triggerVictory();
@@ -1721,6 +1764,26 @@
 
             ctx.save();
             ctx.translate(-cameraX, 0);
+
+            checkpointPositions.forEach((checkpoint, index) => {
+                if (checkpoint < cameraX - 40 || checkpoint > cameraX + BASE_WIDTH + 40) return;
+                ctx.save();
+                ctx.globalAlpha = 0.78;
+                ctx.strokeStyle = index <= latestCheckpointIndex ? '#a7ff3f' : '#ffe66d';
+                ctx.shadowColor = ctx.strokeStyle;
+                ctx.shadowBlur = 16;
+                ctx.setLineDash([10, 8]);
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(checkpoint, 80);
+                ctx.lineTo(checkpoint, GROUND_Y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.font = 'bold 18px Segoe UI, sans-serif';
+                ctx.fillText(`CP${index + 1}`, checkpoint + 8, 110);
+                ctx.restore();
+            });
 
             for (let i = 0; i < levelObjects.length; i++) {
                 const obj = levelObjects[i];
