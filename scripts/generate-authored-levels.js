@@ -42,9 +42,11 @@ function addPlatform(obstacles, x, y, width) {
 function buildLevel(number) {
   const [name, recipe] = LEVELS[number - 1];
   const obstacles = [];
+  const speed = Number((7.7 + number * 0.19).toFixed(2));
+  const targetLength = Math.round(speed * 60 * 60);
   let x = 900 + number * 35;
-  const passes = 6 + ((number - 1) % 3);
-  for (let pass = 0; pass < passes; pass += 1) {
+  let pass = 0;
+  while (x < targetLength - 900 && pass < 30) {
     const direction = pass % 2 === 0 ? 1 : -1;
     recipe.forEach((section, sectionIndex) => {
     const [kind, value, widthOrRise] = section;
@@ -73,10 +75,20 @@ function buildLevel(number) {
     x += 30 + (number % 3) * 12 + pass * 8;
     });
     x += 180 + (pass % 3) * 45;
+    pass += 1;
   }
 
-  x = addSpike(obstacles, x, 2 + (number % 3), 48);
-  const length = x + 420;
+  const bounded = obstacles.filter((obstacle) => obstacle.x < targetLength - 260);
+  obstacles.length = 0;
+  obstacles.push(...bounded);
+  let lastEnd = Math.max(...obstacles.map((obstacle) => obstacle.x + (obstacle.w || 42)));
+  while (lastEnd < targetLength - 900) {
+    const fillerX = Math.min(lastEnd + 260, targetLength - 520);
+    obstacles.push({ type: 'spike', x: fillerX, w: 42, h: 48 });
+    lastEnd = fillerX + 42;
+  }
+  x = addSpike(obstacles, targetLength - 260, 2 + (number % 3), 48);
+  const length = targetLength;
 
   // Remove the platform span under each spike plus visual clearance.
   const spikes = obstacles.filter((obstacle) => obstacle.type === 'spike');
@@ -107,10 +119,10 @@ function buildLevel(number) {
     id: number,
     name,
     themeIndex: themes[number - 1],
-    speed: Number((7.7 + number * 0.19).toFixed(2)),
+    speed,
     length,
     difficulty: number,
-    routePasses: passes,
+    routePasses: pass,
     obstacles: split,
   };
 }

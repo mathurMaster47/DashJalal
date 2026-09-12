@@ -22,7 +22,9 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
   if (!level) throw new Error(`${file}: missing level data`);
   if (!level.name || names.has(level.name)) throw new Error(`${file}: duplicate authored identity`);
   names.add(level.name);
-  if (level.routePasses < 4) throw new Error(`${file}: route is not extended`);
+  if (level.routePasses < 6) throw new Error(`${file}: route is not extended`);
+  const expectedDuration = level.length / (level.speed * 60);
+  if (expectedDuration < 58 || expectedDuration > 62) throw new Error(`${file}: expected duration ${expectedDuration.toFixed(2)}s is outside 58-62s`);
   const routeStart = 900 + levelNumber * 35;
   const baselineRoute = baselineLengths[levelNumber - 1] - routeStart;
   if (level.length - routeStart < baselineRoute * 4) throw new Error(`${file}: route length is less than 4x baseline`);
@@ -44,6 +46,12 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
   if (level.obstacles.length < baselineObstacleCounts[levelNumber - 1] * 3) throw new Error(`${file}: obstacle density did not scale`);
   const lastObstacle = Math.max(...level.obstacles.map((obstacle) => obstacle.x + (obstacle.w || 42)));
   if (lastObstacle < level.length - 700) throw new Error(`${file}: empty tail after final obstacle`);
+  if (lastObstacle > level.length + 50) throw new Error(`${file}: obstacle extends beyond level end`);
+  const ordered = level.obstacles.slice().sort((a, b) => a.x - b.x);
+  const largestGap = ordered.reduce((largest, obstacle, index) => index
+    ? Math.max(largest, obstacle.x - (ordered[index - 1].x + (ordered[index - 1].w || 42)))
+    : 0, 0);
+  if (largestGap > 900) throw new Error(`${file}: playable route gap ${largestGap}px is too large`);
 
   for (const spike of spikes) {
     for (const platform of platforms) {
