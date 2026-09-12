@@ -13,7 +13,7 @@
         }
 
         body {
-            background: radial-gradient(circle at center, #1e0938 0%, #06020c 100%);
+            background: radial-gradient(circle at 35% 20%, #111a32 0%, #05070d 48%, #020308 100%);
             color: #ffffff;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             width: 100vw;
@@ -35,10 +35,10 @@
 
         canvas {
             display: block;
-            background-color: #0b0518;
-            box-shadow: 0 0 50px rgba(120, 50, 255, 0.4), 0 0 100px rgba(0, 240, 255, 0.2);
-            border-radius: 12px;
-            border: 3px solid rgba(0, 240, 255, 0.4);
+            background-color: #050812;
+            box-shadow: 0 0 24px rgba(0, 240, 255, 0.55), 0 0 90px rgba(255, 0, 136, 0.22);
+            border-radius: 8px;
+            border: 3px solid rgba(157, 255, 248, 0.8);
         }
 
         #ui-layer {
@@ -63,11 +63,15 @@
         }
 
         .hud-text {
-            color: #ffffff;
+            color: #f7fbff;
+            background: rgba(2, 7, 16, 0.45);
+            border: 1px solid rgba(157, 255, 248, 0.28);
+            border-radius: 8px;
+            padding: 8px 14px;
             font-size: 24px;
             font-weight: 800;
             letter-spacing: 1.5px;
-            text-shadow: 0 0 12px rgba(0, 240, 255, 0.9), 0 0 24px rgba(120, 50, 255, 0.6);
+            text-shadow: 0 0 8px #00f6ff, 0 0 20px rgba(255, 0, 136, 0.75);
         }
 
         .menu-overlay {
@@ -78,12 +82,12 @@
             text-align: center;
             color: #fff;
             pointer-events: auto;
-            background: rgba(18, 8, 38, 0.96);
+            background: linear-gradient(145deg, rgba(4, 10, 24, 0.98), rgba(13, 5, 28, 0.97));
             padding: 40px 60px;
             border-radius: 24px;
-            border: 3px solid rgba(0, 240, 255, 0.5);
+            border: 2px solid rgba(157, 255, 248, 0.8);
             backdrop-filter: blur(16px);
-            box-shadow: 0 0 80px rgba(0, 0, 0, 0.8), 0 0 30px rgba(120, 50, 255, 0.4);
+            box-shadow: 0 0 80px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 246, 255, 0.28), 0 0 55px rgba(255, 0, 136, 0.2);
             max-width: 90vw;
             max-height: 90vh;
             overflow-y: auto;
@@ -93,30 +97,30 @@
             font-size: 64px;
             font-weight: 900;
             letter-spacing: 10px;
-            color: #00f0ff;
-            text-shadow: 0 0 20px #00f0ff, 0 0 50px rgba(0, 240, 255, 0.7);
+            color: #9dfff8;
+            text-shadow: 3px 0 #ff0088, 0 0 18px #00f6ff, 0 0 45px rgba(0, 246, 255, 0.8);
             margin-bottom: 6px;
         }
 
         .menu-overlay p {
             font-size: 18px;
             margin-bottom: 28px;
-            color: #d8b4fe;
+            color: #f1d7ff;
             font-weight: 600;
             letter-spacing: 1px;
         }
 
         .btn {
-            background: linear-gradient(135deg, #00f0ff 0%, #9333ea 100%);
-            border: none;
-            color: #ffffff;
+            background: linear-gradient(135deg, #00f6ff 0%, #ff0088 58%, #ff8a00 100%);
+            border: 2px solid #ffffff;
+            color: #02050b;
             padding: 16px 48px;
             font-size: 24px;
             font-weight: 800;
             letter-spacing: 2px;
             border-radius: 14px;
             cursor: pointer;
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
+            box-shadow: 0 0 22px rgba(0, 246, 255, 0.75), 0 0 35px rgba(255, 0, 136, 0.4);
             transition: transform 0.15s ease, box-shadow 0.15s ease;
             margin: 8px;
         }
@@ -131,8 +135,9 @@
         }
 
         .btn-secondary {
-            background: linear-gradient(135deg, #4b5563 0%, #1f2937 100%);
-            box-shadow: 0 0 15px rgba(75, 85, 99, 0.5);
+            background: linear-gradient(135deg, #26334d 0%, #101827 100%);
+            color: #f7fbff;
+            box-shadow: 0 0 16px rgba(0, 246, 255, 0.22);
             font-size: 20px;
             padding: 12px 32px;
         }
@@ -157,8 +162,8 @@
         }
 
         .level-btn, .char-btn {
-            background: #231147;
-            border: 2px solid #00f0ff;
+            background: #0b1730;
+            border: 2px solid #55f5ff;
             color: #fff;
             font-size: 20px;
             font-weight: 800;
@@ -166,7 +171,7 @@
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.15s ease;
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+            box-shadow: inset 0 0 14px rgba(0, 246, 255, 0.08), 0 0 12px rgba(0, 246, 255, 0.25);
         }
 
         .char-btn {
@@ -405,7 +410,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v1.5.0';
+        const GAME_VERSION = 'v1.6.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -694,6 +699,32 @@
             { bg1: '#0d1b2a', bg2: '#03070b', accent: '#41ead4', spike: '#ff6b6b', block: '#09121c' }, // 19
             { bg1: '#2b090a', bg2: '#100304', accent: '#e0a96d', spike: '#e76f51', block: '#1c0506' }  // 20
         ];
+
+        const cyberPalettes = [
+            ['#06111f', '#02050c', '#00f6ff', '#ff0088', '#102943'],
+            ['#071426', '#02050d', '#55f5ff', '#ff3864', '#102c48'],
+            ['#07180f', '#020a08', '#a7ff3f', '#ff8a00', '#12351e'],
+            ['#16071c', '#05020b', '#ff4fd8', '#7c4dff', '#321342'],
+            ['#191207', '#080501', '#ffe66d', '#ff4d4d', '#39270b'],
+            ['#061a1a', '#020a0b', '#2dfff0', '#ff3864', '#0c3735'],
+            ['#13091d', '#05020b', '#d58cff', '#55f5ff', '#2b1640'],
+            ['#1a0d05', '#080301', '#ff9d3f', '#ffe66d', '#3a1b08'],
+            ['#071329', '#02050d', '#69a7ff', '#ff5de4', '#102d59'],
+            ['#1b070b', '#070204', '#ff6b6b', '#ffe66d', '#3d1117'],
+            ['#101827', '#03060c', '#e6f0ff', '#ff3864', '#25334b'],
+            ['#07171c', '#02090d', '#00f0d0', '#ff6b35', '#12343b'],
+            ['#160b2b', '#05020d', '#ff5f7e', '#55b7ff', '#32165a'],
+            ['#07182c', '#02070f', '#ffe66d', '#ff7055', '#10365d'],
+            ['#100d2c', '#040310', '#ff9d3f', '#59ff9a', '#29225d'],
+            ['#1d071d', '#07020b', '#ff3fa4', '#00f6ff', '#3b123e'],
+            ['#071b17', '#020908', '#a7ff3f', '#ff3864', '#123b30'],
+            ['#1b0e07', '#080301', '#ff9d3f', '#d85cff', '#3b1b0b'],
+            ['#071525', '#02060c', '#41ead4', '#ff6b6b', '#12334a'],
+            ['#190608', '#060103', '#ffe0a3', '#ff7055', '#3a1011'],
+        ];
+        themes.forEach((theme, index) => {
+            [theme.bg1, theme.bg2, theme.accent, theme.spike, theme.block] = cyberPalettes[index];
+        });
 
         const player = {
             x: 100,
@@ -1226,20 +1257,46 @@
             ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
 
+            // Layered cyber-grid: distant scanlines and a faster foreground lattice.
+            ctx.save();
+            ctx.globalAlpha = 0.12;
             ctx.strokeStyle = levelTheme.accent;
-            ctx.globalAlpha = 0.15;
+            ctx.lineWidth = 1;
+            const farOffset = -(cameraX * 0.08) % 96;
+            ctx.beginPath();
+            for (let x = farOffset; x < BASE_WIDTH; x += 96) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, BASE_HEIGHT);
+            }
+            for (let y = 48; y < BASE_HEIGHT; y += 48) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(BASE_WIDTH, y);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.strokeStyle = levelTheme.accent;
+            ctx.globalAlpha = 0.28;
             ctx.lineWidth = 2;
-            const gridOffset = -(cameraX * 0.25) % 60;
+            const gridOffset = -(cameraX * 0.42) % 64;
             ctx.beginPath();
             for (let x = gridOffset; x < BASE_WIDTH; x += 60) {
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, BASE_HEIGHT);
             }
+            for (let y = 80; y < GROUND_Y; y += 80) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(BASE_WIDTH, y);
+            }
             ctx.stroke();
             ctx.globalAlpha = 1.0;
 
+            ctx.save();
+            ctx.shadowColor = levelTheme.accent;
+            ctx.shadowBlur = 18;
             ctx.fillStyle = levelTheme.accent;
             ctx.fillRect(0, GROUND_Y, BASE_WIDTH, 4);
+            ctx.restore();
             ctx.fillStyle = levelTheme.bg2;
             ctx.fillRect(0, GROUND_Y + 4, BASE_WIDTH, BASE_HEIGHT - GROUND_Y);
 
@@ -1251,6 +1308,9 @@
                 if (obj.x < cameraX - 100 || obj.x > cameraX + BASE_WIDTH + 100) continue;
 
                 if (obj.type === 'spike') {
+                    ctx.save();
+                    ctx.shadowColor = levelTheme.spike;
+                    ctx.shadowBlur = 16;
                     ctx.fillStyle = levelTheme.spike;
                     ctx.beginPath();
                     ctx.moveTo(obj.x, obj.y);
@@ -1259,20 +1319,35 @@
                     ctx.closePath();
                     ctx.fill();
                     ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 3;
                     ctx.stroke();
+                    ctx.restore();
                 } else if (obj.type === 'platform') {
+                    ctx.save();
+                    ctx.shadowColor = levelTheme.accent;
+                    ctx.shadowBlur = 14;
                     ctx.fillStyle = levelTheme.block;
                     ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
                     ctx.strokeStyle = levelTheme.accent;
                     ctx.lineWidth = 3;
-                    ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                    ctx.beginPath();
+                    ctx.moveTo(obj.x, obj.y + 1);
+                    ctx.lineTo(obj.x + obj.w, obj.y + 1);
+                    ctx.stroke();
+                    ctx.restore();
                 } else if (obj.type === 'pad') {
+                    ctx.save();
+                    ctx.shadowColor = levelTheme.accent;
+                    ctx.shadowBlur = 18;
                     ctx.fillStyle = levelTheme.accent;
                     ctx.fillRect(obj.x, GROUND_Y - obj.h, obj.w, obj.h);
                     ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 3;
                     ctx.strokeRect(obj.x, GROUND_Y - obj.h, obj.w, obj.h);
+                    ctx.restore();
                 }
             }
 
@@ -1298,9 +1373,12 @@
                 ctx.rotate((player.rotation * Math.PI) / 180);
 
                 ctx.fillStyle = avatarConfig.color;
+                ctx.shadowColor = avatarConfig.color;
+                ctx.shadowBlur = 22;
                 ctx.fillRect(-PLAYER_SIZE / 2, -PLAYER_SIZE / 2, PLAYER_SIZE, PLAYER_SIZE);
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 4;
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
                 ctx.strokeRect(-PLAYER_SIZE / 2, -PLAYER_SIZE / 2, PLAYER_SIZE, PLAYER_SIZE);
 
                 drawCharacterFace();
