@@ -365,6 +365,27 @@
         </div>
     </div>
 
+    <script src="levels/level-01.js"></script>
+    <script src="levels/level-02.js"></script>
+    <script src="levels/level-03.js"></script>
+    <script src="levels/level-04.js"></script>
+    <script src="levels/level-05.js"></script>
+    <script src="levels/level-06.js"></script>
+    <script src="levels/level-07.js"></script>
+    <script src="levels/level-08.js"></script>
+    <script src="levels/level-09.js"></script>
+    <script src="levels/level-10.js"></script>
+    <script src="levels/level-11.js"></script>
+    <script src="levels/level-12.js"></script>
+    <script src="levels/level-13.js"></script>
+    <script src="levels/level-14.js"></script>
+    <script src="levels/level-15.js"></script>
+    <script src="levels/level-16.js"></script>
+    <script src="levels/level-17.js"></script>
+    <script src="levels/level-18.js"></script>
+    <script src="levels/level-19.js"></script>
+    <script src="levels/level-20.js"></script>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d', { alpha: false });
@@ -700,8 +721,36 @@
         const levelObjects = [];
         const particles = [];
 
+        function normalizeLevelObstacle(obstacle) {
+            const normalized = { ...obstacle };
+            if (normalized.type === 'spike') {
+                normalized.y = GROUND_Y;
+            } else if (normalized.type === 'pad') {
+                normalized.y = GROUND_Y - (normalized.h || 14);
+            } else if (normalized.type === 'block') {
+                normalized.y = GROUND_Y + (normalized.y || 0);
+            }
+            return normalized;
+        }
+
         function generateLevel(lvlNum) {
             levelObjects.length = 0;
+
+            const levelData = (window.LEVELS && window.LEVELS[lvlNum]) || null;
+            if (levelData) {
+                levelSpeed = levelData.speed;
+                levelLength = levelData.length;
+                levelTheme = themes[(levelData.themeIndex || 0) % themes.length];
+
+                if (Array.isArray(levelData.obstacles)) {
+                    for (const obstacle of levelData.obstacles) {
+                        levelObjects.push(normalizeLevelObstacle(obstacle));
+                    }
+                    return;
+                }
+            }
+
+            // Fallback random generation for safety.
             levelSpeed = 7.8 + (lvlNum * 0.15);
             levelLength = 10000 + (lvlNum * 800);
             levelTheme = themes[(lvlNum - 1) % themes.length];
