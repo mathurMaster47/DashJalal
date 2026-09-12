@@ -534,7 +534,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.2.2';
+        const GAME_VERSION = 'v2.3.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -799,6 +799,7 @@
         let totalCoins = Math.max(0, parseInt(localStorage.getItem(COINS_KEY) || '0', 10) || 0);
         let collectedCoinIds = JSON.parse(localStorage.getItem(COLLECTED_COINS_KEY) || '[]');
         if (!Array.isArray(collectedCoinIds)) collectedCoinIds = [];
+        let pendingCoinIds = [];
         let purchasedShopItems = JSON.parse(localStorage.getItem(SHOP_KEY) || '{}');
         if (!purchasedShopItems || typeof purchasedShopItems !== 'object') purchasedShopItems = {};
 
@@ -843,7 +844,9 @@
         function updateCoinLabels() {
             ['coin-display', 'menu-coin-display', 'shop-coin-display'].forEach((id) => {
                 const element = document.getElementById(id);
-                if (element) element.innerText = `COINS: ${totalCoins}`;
+                if (element) element.innerText = id === 'coin-display'
+                    ? `RUN: +${pendingCoinIds.length} • BANK: ${totalCoins}`
+                    : `COINS: ${totalCoins}`;
             });
         }
 
@@ -1326,6 +1329,7 @@
         }
 
         function returnToMenu() {
+            pendingCoinIds = [];
             stopPhonkMusic();
             gameState = 'MENU';
             document.getElementById('hud-top').style.display = 'none';
@@ -1340,6 +1344,7 @@
 
         function startLevel(lvl) {
             currentLevel = lvl;
+            pendingCoinIds = [];
             generateLevel(currentLevel);
             player.reset();
             cameraX = 0;
@@ -1362,6 +1367,7 @@
         }
 
         function retryLevel() {
+            pendingCoinIds = [];
             startLevel(currentLevel);
         }
 
@@ -1385,6 +1391,8 @@
 
         function triggerDeath() {
             if (gameState !== 'PLAYING') return;
+            pendingCoinIds = [];
+            updateCoinLabels();
             gameState = 'DEAD';
             stopPhonkMusic();
             playSound('death');
@@ -1401,6 +1409,13 @@
 
         function triggerVictory() {
             if (gameState !== 'PLAYING') return;
+            for (const coinId of pendingCoinIds) {
+                if (!collectedCoinIds.includes(coinId)) collectedCoinIds.push(coinId);
+            }
+            totalCoins += pendingCoinIds.length;
+            pendingCoinIds = [];
+            saveRewardState();
+            updateCoinLabels();
             gameState = 'VICTORY';
             stopPhonkMusic();
             playSound('victory');
@@ -1487,10 +1502,8 @@
                 const coinBox = { x: coin.x - coin.r, y: coin.y - coin.r, w: coin.r * 2, h: coin.r * 2 };
                 if (checkCollision(pBox, coinBox)) {
                     coin.collected = true;
-                    if (!collectedCoinIds.includes(coin.id)) {
-                        collectedCoinIds.push(coin.id);
-                        totalCoins += 1;
-                        saveRewardState();
+                    if (!pendingCoinIds.includes(coin.id) && !collectedCoinIds.includes(coin.id)) {
+                        pendingCoinIds.push(coin.id);
                         updateCoinLabels();
                         spawnParticles(coin.x, coin.y, 14, '#ffe66d');
                         playSound('pad');

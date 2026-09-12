@@ -60,7 +60,16 @@ for (const required of [
   'id="coin-display"',
   'id="shop-menu"',
   'const SHOP_ITEMS = [',
-  "const GAME_VERSION = 'v2.2.2'"
+  "const GAME_VERSION = 'v2.3.0'",
+  'let pendingCoinIds = []',
+  'pendingCoinIds.push(coin.id)',
+  'for (const coinId of pendingCoinIds)',
+  'pendingCoinIds = [];',
+  'RUN: +${pendingCoinIds.length}',
+  'function triggerDeath()',
+  'function triggerVictory()',
+  'function retryLevel()',
+  'function returnToMenu()'
 ]) {
   if (!source.includes(required)) throw new Error(`Missing rewards behavior: ${required}`);
 }
@@ -86,4 +95,22 @@ if (simulatedCoins !== 2 || !simulatedOwned) throw new Error('Purchase simulatio
 const afterDuplicatePurchase = simulatedCoins;
 if (simulatedOwned) simulatedCoins = afterDuplicatePurchase;
 if (simulatedCoins !== 2) throw new Error('Duplicate purchase spent coins');
+function simulateAttempt(shouldWin) {
+  let bank = 7;
+  let pending = new Set();
+  pending.add('L1C1');
+  pending.add('L1C2');
+  pending.add('L1C2');
+  if (shouldWin) {
+    bank += pending.size;
+    pending.clear();
+  } else {
+    pending.clear();
+  }
+  return { bank, pending: pending.size };
+}
+const failed = simulateAttempt(false);
+if (failed.bank !== 7 || failed.pending !== 0) throw new Error('Failed attempt awarded pending coins');
+const completed = simulateAttempt(true);
+if (completed.bank !== 9 || completed.pending !== 0) throw new Error('Victory did not commit unique pending coins');
 console.log(`Rewards checks passed: ${totalCoins} authored coins, persistence, shop purchase/equip flow, and UI hooks.`);
