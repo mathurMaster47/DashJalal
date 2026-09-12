@@ -2,8 +2,11 @@ const fs = require('fs');
 
 const source = fs.readFileSync('index.html', 'utf8');
 for (const required of [
-  'const secretSpeedSequence = [20, 12, 17]',
-  'function trackSecretSpeedSequence',
+  'const SECRET_TITLE_CLICKS = 7',
+  'const SECRET_TITLE_TIMEOUT_MS = 1500',
+  'function handleSecretTitleActivation',
+  'id="secret-title"',
+  "addEventListener('click', handleSecretTitleActivation)",
   'function showSpeedSelector',
   'function selectSpeedMode(mode)',
   "const SPEED_MODE_KEY = 'dash_speed_mode'",
@@ -15,26 +18,32 @@ for (const required of [
   if (!source.includes(required)) throw new Error(`Missing secret speed behavior: ${required}`);
 }
 
-function track(sequence, clicks) {
-  let index = 0;
+if (source.includes('secretSpeedSequence') || source.includes('trackSecretSpeedSequence')) {
+  throw new Error('Legacy level-button speed sequence is still present');
+}
+
+function titleUnlocks(clicks, inMainMenu = true) {
+  let count = 0;
   let unlocked = false;
   for (const click of clicks) {
-    if (click === sequence[index]) {
-      index += 1;
-      if (index === sequence.length) {
-        unlocked = true;
-        index = 0;
-      }
-    } else {
-      index = click === sequence[0] ? 1 : 0;
+    if (!inMainMenu || click !== 'title') {
+      count = 0;
+      continue;
+    }
+    count += 1;
+    if (count === 7) {
+      unlocked = true;
+      count = 0;
     }
   }
   return unlocked;
 }
 
-if (!track([20, 12, 17], [20, 12, 17])) throw new Error('Secret sequence did not unlock');
-if (track([20, 12, 17], [20, 11, 12, 17])) throw new Error('Wrong click did not reset sequence');
-if (!track([20, 12, 17], [1, 20, 12, 17])) throw new Error('Sequence did not recover after reset');
+if (!titleUnlocks(Array(7).fill('title'))) throw new Error('Seven title clicks did not unlock');
+if (titleUnlocks(['title', 'title', 'level-20', 'title', 'title', 'title', 'title', 'title'])) {
+  throw new Error('Wrong-context click did not reset title count');
+}
+if (titleUnlocks([20, 12, 17])) throw new Error('Old level sequence unlocked speed selector');
 
 const multipliers = { slow: 0.85, normal: 1, responsive: 1.1 };
 for (const [mode, multiplier] of Object.entries(multipliers)) {

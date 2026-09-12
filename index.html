@@ -341,6 +341,16 @@
             color: #02050b;
             border-color: #ffffff;
         }
+
+        .secret-title {
+            appearance: none;
+            background: transparent;
+            border: 0;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            padding: 0;
+        }
     </style>
 </head>
 <body>
@@ -361,7 +371,7 @@
 
         <!-- Main Menu -->
         <div id="main-menu" class="menu-overlay">
-            <h1>DASH</h1>
+            <h1><button class="secret-title" id="secret-title" type="button" aria-label="DASH title">DASH</button></h1>
             <p>20 Levels • Precision Platformer</p>
             <div>
                 <button class="btn" onclick="openLevelSelect()">PLAY</button><br>
@@ -455,7 +465,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v1.9.0';
+        const GAME_VERSION = 'v2.0.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -738,20 +748,26 @@
             { id: 'headband', name: 'Ninja Headband' }
         ];
 
-        const secretSpeedSequence = [20, 12, 17];
-        let secretSpeedIndex = 0;
+        const SECRET_TITLE_CLICKS = 7;
+        const SECRET_TITLE_TIMEOUT_MS = 1500;
+        let secretTitleClicks = 0;
+        let secretTitleResetTimer = null;
         let speedSelectorUnlocked = false;
 
-        function trackSecretSpeedSequence(level) {
-            if (level === secretSpeedSequence[secretSpeedIndex]) {
-                secretSpeedIndex += 1;
-                if (secretSpeedIndex === secretSpeedSequence.length) {
-                    secretSpeedIndex = 0;
-                    speedSelectorUnlocked = true;
-                    showSpeedSelector();
-                }
-            } else {
-                secretSpeedIndex = level === secretSpeedSequence[0] ? 1 : 0;
+        function handleSecretTitleActivation() {
+            if (gameState !== 'MENU' || document.getElementById('main-menu').style.display === 'none') {
+                secretTitleClicks = 0;
+                return;
+            }
+            secretTitleClicks += 1;
+            clearTimeout(secretTitleResetTimer);
+            secretTitleResetTimer = setTimeout(() => {
+                secretTitleClicks = 0;
+            }, SECRET_TITLE_TIMEOUT_MS);
+            if (secretTitleClicks === SECRET_TITLE_CLICKS) {
+                secretTitleClicks = 0;
+                speedSelectorUnlocked = true;
+                showSpeedSelector();
             }
         }
 
@@ -765,6 +781,8 @@
             const selector = document.getElementById('speed-selector');
             if (selector) selector.classList.remove('visible');
         }
+
+        document.getElementById('secret-title').addEventListener('click', handleSecretTitleActivation);
 
         // Stealth easter egg sequence (4, 7, 2, 9, 19)
         const easterEggSeq = [4, 7, 2, 9, 19];
@@ -986,7 +1004,6 @@
                 btn.innerText = i;
                 
                 btn.onclick = () => {
-                    trackSecretSpeedSequence(i);
                     checkEasterEgg(i);
                     if (i <= unlockedLevel) {
                         startLevel(i);
