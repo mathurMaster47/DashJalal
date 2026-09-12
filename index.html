@@ -274,6 +274,18 @@
             display: none;
         }
 
+        #version-label {
+            position: absolute;
+            left: 20px;
+            bottom: 16px;
+            z-index: 10;
+            color: #d8b4fe;
+            font: 700 13px/1.2 'Segoe UI', system-ui, sans-serif;
+            letter-spacing: 1px;
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.8);
+            pointer-events: none;
+        }
+
         .small-btn {
             background: rgba(35, 17, 71, 0.8);
             border: 2px solid #00f0ff;
@@ -293,6 +305,7 @@
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
+        <div id="version-label" aria-label="Game version"></div>
         <div id="ui-layer">
             <div class="hud-row" id="hud-top" style="display:none;">
                 <div class="hud-text" id="level-display">LEVEL 1</div>
@@ -392,6 +405,8 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
+        const GAME_VERSION = 'v1.1.0';
+        document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
             const windowW = window.innerWidth;
@@ -728,8 +743,10 @@
             } else if (normalized.type === 'pad') {
                 normalized.y = GROUND_Y - (normalized.h || 14);
             } else if (normalized.type === 'platform' || normalized.type === 'block') {
+                // Convert old level data at the boundary so no thick block can reach rendering.
+                normalized.type = 'platform';
                 normalized.y = GROUND_Y + (normalized.y || 0);
-                normalized.h = normalized.h || 20;
+                normalized.h = 20;
             }
             return normalized;
         }
@@ -1077,7 +1094,7 @@
                         triggerDeath();
                         return;
                     }
-                } else if (obj.type === 'platform' || obj.type === 'block') {
+                } else if (obj.type === 'platform') {
                     if (checkCollision(pBox, obj)) {
                         if (player.vy > 0 && player.y + PLAYER_SIZE - player.vy <= obj.y + 12) {
                             player.y = obj.y - PLAYER_SIZE;
@@ -1244,7 +1261,7 @@
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 2;
                     ctx.stroke();
-                } else if (obj.type === 'platform' || obj.type === 'block') {
+                } else if (obj.type === 'platform') {
                     ctx.fillStyle = levelTheme.block;
                     ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
                     ctx.strokeStyle = levelTheme.accent;
