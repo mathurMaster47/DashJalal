@@ -62,6 +62,11 @@
             width: 100%;
         }
 
+        #coin-display, #menu-coin-display {
+            color: #ffe66d;
+            text-shadow: 0 0 10px #ff8a00, 2px 0 0 #ff0088;
+        }
+
         .hud-text {
             color: #ffffff;
             background: rgba(2, 7, 16, 0.45);
@@ -181,6 +186,41 @@
             font-size: 16px;
             padding: 20px 10px;
         }
+
+        #shop-menu {
+            display: none;
+            width: 700px;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 18px 0 24px;
+        }
+
+        .shop-item {
+            background: rgba(8, 18, 38, 0.88);
+            border: 2px solid rgba(255, 230, 109, 0.75);
+            border-radius: 12px;
+            color: #fff;
+            padding: 14px;
+            text-align: left;
+        }
+
+        .shop-item strong { color: #ffe66d; }
+        .shop-item small { display: block; color: #d9e7ff; margin: 4px 0 10px; }
+        .shop-item button {
+            border: 1px solid #00f6ff;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #152d49, #381536);
+            color: #fff;
+            cursor: pointer;
+            padding: 7px 11px;
+            font-weight: 800;
+        }
+        .shop-item button:disabled { opacity: 0.55; cursor: not-allowed; }
+        #shop-feedback { min-height: 24px; color: #a7ff3f; font-weight: 700; }
 
         .level-btn:hover:not(.locked), .char-btn:hover {
             background: linear-gradient(135deg, #00f6ff, #ff0088, #a7ff3f);
@@ -364,6 +404,7 @@
             <div class="hud-row" id="hud-top" style="display:none;">
                 <div class="hud-text" id="level-display">LEVEL 1</div>
                 <div class="hud-text" id="progress-display">0%</div>
+                <div class="hud-text" id="coin-display">COINS: 0</div>
             </div>
         </div>
 
@@ -379,9 +420,11 @@
             <div>
                 <button class="btn" onclick="openLevelSelect()">PLAY</button><br>
                 <button class="btn btn-secondary" onclick="openCharacterSelect()">CHARACTER</button>
+                <button class="btn btn-secondary" onclick="openShop()">SHOP</button>
                 <button class="btn btn-secondary" onclick="toggleSound()" id="sound-btn">SOUND: ON</button>
                 <button class="btn btn-secondary mode-btn" onclick="toggleResponsiveMode()" id="mode-menu-btn"></button>
             </div>
+            <div class="hud-text" id="menu-coin-display" style="margin-top: 16px; display: inline-block;">COINS: 0</div>
         </div>
 
         <!-- Level Select Menu -->
@@ -407,6 +450,15 @@
             
             <div style="display: flex; justify-content: center; margin-bottom: 16px;">
                 <canvas id="previewCanvas" width="130" height="130" style="background: rgba(11,5,24,0.8); border-radius: 18px; border: 2px solid #00f0ff; box-shadow: 0 0 25px rgba(0,240,255,0.4);"></canvas>
+            </div>
+
+            <div id="shop-menu" class="menu-overlay">
+                <h1 style="font-size: 40px; margin-bottom: 8px;">NEON SHOP</h1>
+                <p>Spend collected coins on permanent avatar upgrades.</p>
+                <div class="hud-text" id="shop-coin-display" style="display: inline-block;">COINS: 0</div>
+                <div class="shop-grid" id="shop-grid"></div>
+                <div id="shop-feedback" aria-live="polite"></div>
+                <button class="btn btn-secondary" onclick="closeShop()">BACK</button>
             </div>
 
             <div style="max-height: 260px; overflow-y: auto; padding-right: 4px; margin-bottom: 16px;">
@@ -468,7 +520,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.1.0';
+        const GAME_VERSION = 'v2.2.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -727,6 +779,14 @@
             eyes: 'normal',
             accessory: 'none'
         }));
+        const COINS_KEY = 'dash_total_coins';
+        const COLLECTED_COINS_KEY = 'dash_collected_coins';
+        const SHOP_KEY = 'dash_shop_purchases';
+        let totalCoins = Math.max(0, parseInt(localStorage.getItem(COINS_KEY) || '0', 10) || 0);
+        let collectedCoinIds = JSON.parse(localStorage.getItem(COLLECTED_COINS_KEY) || '[]');
+        if (!Array.isArray(collectedCoinIds)) collectedCoinIds = [];
+        let purchasedShopItems = JSON.parse(localStorage.getItem(SHOP_KEY) || '{}');
+        if (!purchasedShopItems || typeof purchasedShopItems !== 'object') purchasedShopItems = {};
 
         const bodyColors = [
             '#00f0ff', '#9333ea', '#ff0055', '#4ade80', '#facc15', 
@@ -750,6 +810,40 @@
             { id: 'visor', name: 'Cyber Visor' },
             { id: 'headband', name: 'Ninja Headband' }
         ];
+
+        const SHOP_ITEMS = [
+            { id: 'eyes-shades', type: 'eyes', value: 'shades', name: 'Neon Shades', price: 8 },
+            { id: 'eyes-cyborg', type: 'eyes', value: 'cyborg', name: 'Cyborg Eyes', price: 12 },
+            { id: 'accessory-crown', type: 'accessory', value: 'crown', name: 'Royal Crown', price: 15 },
+            { id: 'accessory-headphones', type: 'accessory', value: 'headphones', name: 'Bass Headphones', price: 18 },
+            { id: 'accessory-visor', type: 'accessory', value: 'visor', name: 'Prism Visor', price: 22 },
+            { id: 'accessory-headband', type: 'accessory', value: 'headband', name: 'Signal Headband', price: 26 }
+        ];
+
+        function saveRewardState() {
+            localStorage.setItem(COINS_KEY, String(totalCoins));
+            localStorage.setItem(COLLECTED_COINS_KEY, JSON.stringify(collectedCoinIds));
+            localStorage.setItem(SHOP_KEY, JSON.stringify(purchasedShopItems));
+        }
+
+        function updateCoinLabels() {
+            ['coin-display', 'menu-coin-display', 'shop-coin-display'].forEach((id) => {
+                const element = document.getElementById(id);
+                if (element) element.innerText = `COINS: ${totalCoins}`;
+            });
+        }
+
+        function isShopItemOwned(item) {
+            return Boolean(purchasedShopItems[item.id]);
+        }
+
+        function isAvatarOptionOwned(type, value) {
+            if (type === 'eyes' && ['normal', 'happy', 'angry', 'wink'].includes(value)) return true;
+            if (type === 'accessory' && ['none', 'cap'].includes(value)) return true;
+            return isShopItemOwned(SHOP_ITEMS.find((item) => item.type === type && item.value === value) || {});
+        }
+
+        updateCoinLabels();
 
         const SECRET_TITLE_CLICKS = 7;
         const SECRET_TITLE_TIMEOUT_MS = 1500;
@@ -904,6 +998,7 @@
         window.addEventListener('mousedown', triggerInput);
 
         const levelObjects = [];
+        const levelCoins = [];
         const particles = [];
 
         function normalizeLevelObstacle(obstacle) {
@@ -921,8 +1016,19 @@
             return normalized;
         }
 
+        function normalizeLevelCoin(coin, index) {
+            return {
+                id: coin.id || `L${currentLevel}C${index + 1}`,
+                x: coin.x,
+                y: coin.y || GROUND_Y - 26,
+                r: coin.r || 12,
+                collected: collectedCoinIds.includes(coin.id || `L${currentLevel}C${index + 1}`)
+            };
+        }
+
         function generateLevel(lvlNum) {
             levelObjects.length = 0;
+            levelCoins.length = 0;
 
             const levelData = (window.LEVELS && window.LEVELS[lvlNum]) || null;
             if (levelData) {
@@ -934,8 +1040,9 @@
                     for (const obstacle of levelData.obstacles) {
                         levelObjects.push(normalizeLevelObstacle(obstacle));
                     }
-                    return;
                 }
+                levelCoins.push(...(Array.isArray(levelData.coins) ? levelData.coins.map(normalizeLevelCoin) : []));
+                return;
             }
 
             // Fallback random generation for safety.
@@ -944,6 +1051,7 @@
             levelTheme = themes[(lvlNum - 1) % themes.length];
 
             levelObjects.push({ type: 'spike', x: 850, y: GROUND_Y, w: 42, h: 48 });
+            levelCoins.push({ id: `L${currentLevel}C1`, x: 600, y: GROUND_Y - 26, r: 12, collected: false });
             if (lvlNum > 3) {
                 levelObjects.push({ type: 'spike', x: 892, y: GROUND_Y, w: 42, h: 48 });
             }
@@ -996,6 +1104,7 @@
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('menu').style.display = 'none';
             document.getElementById('character-menu').style.display = 'none';
+            document.getElementById('shop-menu').style.display = 'none';
             document.getElementById('level-select-menu').style.display = 'block';
             
             const grid = document.getElementById('level-grid');
@@ -1028,10 +1137,60 @@
         function openCharacterSelect() {
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-select-menu').style.display = 'none';
+            document.getElementById('shop-menu').style.display = 'none';
             document.getElementById('character-menu').style.display = 'block';
 
             buildCharacterUI();
             drawPreviewAvatar();
+        }
+
+        function openShop() {
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('level-select-menu').style.display = 'none';
+            document.getElementById('character-menu').style.display = 'none';
+            document.getElementById('shop-menu').style.display = 'block';
+            buildShopUI();
+        }
+
+        function closeShop() {
+            document.getElementById('shop-menu').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'block';
+            updateCoinLabels();
+        }
+
+        function buildShopUI(feedback = '') {
+            updateCoinLabels();
+            const grid = document.getElementById('shop-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            document.getElementById('shop-feedback').innerText = feedback;
+            SHOP_ITEMS.forEach((item) => {
+                const owned = isShopItemOwned(item);
+                const card = document.createElement('div');
+                card.className = 'shop-item';
+                card.innerHTML = `<strong>${item.name}</strong><small>${item.type === 'eyes' ? 'Face expression' : 'Accessory'} • ${item.price} coins</small>`;
+                const button = document.createElement('button');
+                button.innerText = owned ? ((avatarConfig[item.type] === item.value) ? 'EQUIPPED' : 'EQUIP') : `BUY ${item.price}`;
+                button.disabled = owned && avatarConfig[item.type] === item.value;
+                button.onclick = () => purchaseOrEquipShopItem(item);
+                card.appendChild(button);
+                grid.appendChild(card);
+            });
+        }
+
+        function purchaseOrEquipShopItem(item) {
+            if (!isShopItemOwned(item)) {
+                if (totalCoins < item.price) {
+                    buildShopUI(`Need ${item.price - totalCoins} more coin${item.price - totalCoins === 1 ? '' : 's'} for ${item.name}.`);
+                    return;
+                }
+                totalCoins -= item.price;
+                purchasedShopItems[item.id] = true;
+                saveRewardState();
+            }
+            avatarConfig[item.type] = item.value;
+            saveAndRefreshAvatar();
+            buildShopUI(`${item.name} ${isShopItemOwned(item) ? 'equipped' : 'unlocked'}!`);
         }
 
         function buildCharacterUI() {
@@ -1055,9 +1214,11 @@
             eyeContainer.innerHTML = '';
             eyeExpressions.forEach(exp => {
                 const pill = document.createElement('div');
-                pill.className = `option-pill ${avatarConfig.eyes === exp.id ? 'active' : ''}`;
-                pill.innerText = exp.name;
+                const owned = isAvatarOptionOwned('eyes', exp.id);
+                pill.className = `option-pill ${avatarConfig.eyes === exp.id ? 'active' : ''} ${owned ? '' : 'locked'}`;
+                pill.innerText = owned ? exp.name : `${exp.name} (SHOP)`;
                 pill.onclick = () => {
+                    if (!owned) return;
                     avatarConfig.eyes = exp.id;
                     saveAndRefreshAvatar();
                 };
@@ -1069,9 +1230,11 @@
             accContainer.innerHTML = '';
             accessories.forEach(acc => {
                 const pill = document.createElement('div');
-                pill.className = `option-pill ${avatarConfig.accessory === acc.id ? 'active' : ''}`;
-                pill.innerText = acc.name;
+                const owned = isAvatarOptionOwned('accessory', acc.id);
+                pill.className = `option-pill ${avatarConfig.accessory === acc.id ? 'active' : ''} ${owned ? '' : 'locked'}`;
+                pill.innerText = owned ? acc.name : `${acc.name} (SHOP)`;
                 pill.onclick = () => {
+                    if (!owned) return;
                     avatarConfig.accessory = acc.id;
                     saveAndRefreshAvatar();
                 };
@@ -1127,7 +1290,9 @@
             document.getElementById('menu').style.display = 'none';
             document.getElementById('character-menu').style.display = 'none';
             document.getElementById('level-select-menu').style.display = 'none';
+            document.getElementById('shop-menu').style.display = 'none';
             document.getElementById('main-menu').style.display = 'block';
+            updateCoinLabels();
         }
 
         function startLevel(lvl) {
@@ -1148,6 +1313,7 @@
             document.getElementById('hud-controls').style.display = 'block';
             document.getElementById('level-display').innerText = `LEVEL ${currentLevel}`;
             document.getElementById('progress-display').innerText = '0%';
+            updateCoinLabels();
 
             startPhonkMusic();
         }
@@ -1272,6 +1438,22 @@
             }
 
             const pBox = { x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
+
+            for (const coin of levelCoins) {
+                if (coin.collected) continue;
+                const coinBox = { x: coin.x - coin.r, y: coin.y - coin.r, w: coin.r * 2, h: coin.r * 2 };
+                if (checkCollision(pBox, coinBox)) {
+                    coin.collected = true;
+                    if (!collectedCoinIds.includes(coin.id)) {
+                        collectedCoinIds.push(coin.id);
+                        totalCoins += 1;
+                        saveRewardState();
+                        updateCoinLabels();
+                        spawnParticles(coin.x, coin.y, 14, '#ffe66d');
+                        playSound('pad');
+                    }
+                }
+            }
 
             for (let i = 0; i < levelObjects.length; i++) {
                 const obj = levelObjects[i];
@@ -1510,6 +1692,24 @@
                     ctx.strokeRect(obj.x, GROUND_Y - obj.h, obj.w, obj.h);
                     ctx.restore();
                 }
+            }
+
+            for (const coin of levelCoins) {
+                if (coin.collected || coin.x < cameraX - 80 || coin.x > cameraX + BASE_WIDTH + 80) continue;
+                ctx.save();
+                ctx.translate(coin.x, coin.y);
+                ctx.shadowColor = '#ffe66d';
+                ctx.shadowBlur = 18;
+                ctx.fillStyle = '#ffe66d';
+                ctx.beginPath();
+                ctx.arc(0, 0, coin.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.fillStyle = '#ff8a00';
+                ctx.fillRect(-2, -coin.r + 4, 4, coin.r * 2 - 8);
+                ctx.restore();
             }
 
             for (let i = 0; i < player.trail.length; i++) {

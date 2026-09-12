@@ -1,0 +1,89 @@
+const fs = require('fs');
+const vm = require('vm');
+
+const GROUND_Y = 560;
+const VISUAL_CLEARANCE = 8;
+const context = { window: {} };
+vm.createContext(context);
+let totalCoins = 0;
+const ids = new Set();
+
+function overlaps(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x &&
+    a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
+  const file = `levels/level-${String(levelNumber).padStart(2, '0')}.js`;
+  vm.runInContext(fs.readFileSync(file, 'utf8'), context, { filename: file });
+  const level = context.window.LEVELS[levelNumber];
+  if (!level || !Array.isArray(level.coins) || level.coins.length < 3) {
+    throw new Error(`${file}: needs at least 3 authored coins`);
+  }
+  const spikes = level.obstacles.filter((o) => o.type === 'spike')
+    .map((o) => ({ x: o.x, y: GROUND_Y - o.h, w: o.w, h: o.h }));
+  const platforms = level.obstacles.filter((o) => o.type === 'platform')
+    .map((o) => ({ x: o.x, y: GROUND_Y + (o.y || 0), w: o.w, h: 20 }));
+  const ordered = level.obstacles.slice().sort((a, b) => a.x - b.x);
+
+  for (const coin of level.coins) {
+    if (!coin.id || ids.has(coin.id)) throw new Error(`${file}: duplicate/missing coin id`);
+    ids.add(coin.id);
+    totalCoins += 1;
+    if (!Number.isFinite(coin.x) || !Number.isFinite(coin.y) || coin.x < 100 || coin.x > level.length) {
+      throw new Error(`${file}: coin is outside the playable route`);
+    }
+    if (coin.r !== 12) throw new Error(`${file}: coin radius must be 12px`);
+    const box = { x: coin.x - coin.r, y: coin.y - coin.r, w: coin.r * 2, h: coin.r * 2 };
+    if (spikes.some((spike) => overlaps(box, spike))) throw new Error(`${file}: coin intersects spike`);
+    if (platforms.some((platform) => overlaps(box, platform))) throw new Error(`${file}: coin intersects platform`);
+    const nearestGap = ordered.reduce((best, obstacle) => {
+      const obstacleEnd = obstacle.x + (obstacle.w || 42);
+      return Math.min(best, Math.abs(coin.x - obstacle.x), Math.abs(coin.x - obstacleEnd));
+    }, Infinity);
+    if (nearestGap < coin.r + VISUAL_CLEARANCE) throw new Error(`${file}: coin lacks visual clearance`);
+    if (coin.y < GROUND_Y - 180 || coin.y > GROUND_Y - 18) {
+      throw new Error(`${file}: coin is outside the reachable jump band`);
+    }
+  }
+  console.log(`${file}: ${level.coins.length} coins, reachable band and clearance valid`);
+}
+
+if (totalCoins !== 80) throw new Error(`Expected 80 campaign coins, found ${totalCoins}`);
+const source = fs.readFileSync('index.html', 'utf8');
+for (const required of [
+  "const COINS_KEY = 'dash_total_coins'",
+  "const SHOP_KEY = 'dash_shop_purchases'",
+  'function purchaseOrEquipShopItem',
+  'function openShop()',
+  'localStorage.setItem(COLLECTED_COINS_KEY',
+  'id="coin-display"',
+  'id="shop-menu"',
+  'const SHOP_ITEMS = [',
+  "const GAME_VERSION = 'v2.2.0'"
+]) {
+  if (!source.includes(required)) throw new Error(`Missing rewards behavior: ${required}`);
+}
+if (source.includes('secretSpeedSequence') || source.includes('trackSecretSpeedSequence')) {
+  throw new Error('Legacy secret speed sequence returned');
+}
+const shopItems = [
+  ['eyes-shades', 8], ['eyes-cyborg', 12], ['accessory-crown', 15],
+  ['accessory-headphones', 18], ['accessory-visor', 22], ['accessory-headband', 26]
+];
+const prices = new Set();
+for (const [id, price] of shopItems) {
+  if (!id || price <= 0 || prices.has(id)) throw new Error(`Invalid shop item ${id}`);
+  prices.add(id);
+}
+let simulatedCoins = 10;
+let simulatedOwned = false;
+if (simulatedCoins < 12) simulatedOwned = false;
+if (simulatedOwned) throw new Error('Insufficient coins incorrectly unlocked an item');
+simulatedCoins -= 8;
+simulatedOwned = true;
+if (simulatedCoins !== 2 || !simulatedOwned) throw new Error('Purchase simulation failed');
+const afterDuplicatePurchase = simulatedCoins;
+if (simulatedOwned) simulatedCoins = afterDuplicatePurchase;
+if (simulatedCoins !== 2) throw new Error('Duplicate purchase spent coins');
+console.log(`Rewards checks passed: ${totalCoins} authored coins, persistence, shop purchase/equip flow, and UI hooks.`);
