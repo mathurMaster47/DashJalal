@@ -544,7 +544,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.9.2';
+        const GAME_VERSION = 'v2.9.3';
         const CHECKPOINT_PROTECTION_SECONDS = 3;
         document.getElementById('version-label').textContent = GAME_VERSION;
 
@@ -804,6 +804,7 @@
 
         const GRAVITY = 0.95;
         const JUMP_FORCE = -15.5;
+        const SPRING_HORIZONTAL_BOOST = 12;
         const GROUND_Y = 560;
         const PLAYER_SIZE = 44;
 
@@ -1642,6 +1643,7 @@
                 } else if (obj.type === 'pad') {
                     if (checkCollision(pBox, { x: obj.x, y: GROUND_Y - obj.h, w: obj.w, h: obj.h })) {
                         player.vy = JUMP_FORCE * 1.35;
+                        player.x += SPRING_HORIZONTAL_BOOST * physicsScale;
                         player.isGrounded = false;
                         playSound('pad');
                         spawnParticles(obj.x + obj.w / 2, GROUND_Y - 5, 15, levelTheme.accent);

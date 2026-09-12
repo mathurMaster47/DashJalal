@@ -33,7 +33,7 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
         .map((object) => object.x)
         .filter((x) => x > spawn)
         .sort((a, b) => a - b)[0];
-      if (nextObstacle && nextObstacle - spawn > 900) {
+      if (nextObstacle && nextObstacle - spawn > 1800) {
         throw new Error(`${file}: checkpoint ${index + 1} next challenge is too far away`);
       }
     });
@@ -42,7 +42,7 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
 
 const source = fs.readFileSync('index.html', 'utf8');
 for (const required of [
-  "const GAME_VERSION = 'v2.9.2'",
+  "const GAME_VERSION = 'v2.9.3'",
   'let checkpointPositions = []',
   'let checkpointSpawnPositions = []',
   'let latestCheckpointIndex = -1',

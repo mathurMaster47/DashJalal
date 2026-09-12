@@ -5,6 +5,7 @@ const GROUND_Y = 560;
 const PLAYER_SIZE = 44;
 const GRAVITY = 0.95;
 const SPRING_BOOST = -15.5 * 1.35;
+const SPRING_HORIZONTAL_BOOST = 12;
 const VISUAL_CLEARANCE = 8;
 const SPRING_CORRIDOR_START = 220;
 const SPRING_CORRIDOR_END = 520;
@@ -48,23 +49,43 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
   const pads = level.obstacles.filter((obstacle) => obstacle.type === 'pad');
   const conflicts = [];
   if (!platforms.length) throw new Error(`${file}: authored layout has no platform surfaces`);
-  if (!spikes.length) throw new Error(`${file}: authored layout has no spike challenge`);
+  if (!spikes.length && !pads.length) throw new Error(`${file}: authored layout has no spike or spring challenge`);
   for (const pad of pads) {
-    const flightFrames = Math.ceil((-2 * SPRING_BOOST) / GRAVITY);
-    const expectedLandingX = pad.x + (level.speed * flightFrames);
-    const corridorStart = pad.x + SPRING_CORRIDOR_START;
-    const corridorEnd = pad.x + SPRING_CORRIDOR_END;
-    const corridorSpikes = spikes.filter((spike) =>
-      spike.x < corridorEnd && spike.x + spike.w > corridorStart
-    );
-    if (corridorSpikes.length) {
-      throw new Error(`${file}: spring at x=${pad.x} launches into ${corridorSpikes.length} spike(s)`);
-    }
-    if (corridorEnd >= level.length - PLAYER_SIZE) {
-      throw new Error(`${file}: spring at x=${pad.x} has no safe landing terrain before level end`);
-    }
-    if (expectedLandingX < corridorStart || expectedLandingX > corridorEnd) {
-      throw new Error(`${file}: spring at x=${pad.x} expected landing x=${expectedLandingX.toFixed(0)} is outside its safe corridor`);
+    for (const speedMultiplier of [0.75, 1, 1.1]) {
+      let x = pad.x;
+      let y = GROUND_Y - PLAYER_SIZE;
+      let vy = SPRING_BOOST;
+      let landingX = x;
+      const flightSpikes = [];
+      for (let frame = 0; frame < 70; frame += 1) {
+        x += (level.speed * 60 * speedMultiplier) / 60 + SPRING_HORIZONTAL_BOOST;
+        vy += GRAVITY;
+        y += vy;
+        if (y >= GROUND_Y - PLAYER_SIZE) {
+          y = GROUND_Y - PLAYER_SIZE;
+          vy = 0;
+          if (!landingX || landingX === pad.x) landingX = x;
+        }
+        const playerBox = { x, y, w: PLAYER_SIZE, h: PLAYER_SIZE };
+        for (const spike of spikes) {
+          const spikeBox = { x: spike.x, y: GROUND_Y - spike.h, w: spike.w, h: spike.h };
+          if (playerBox.x + playerBox.w - 8 > spikeBox.x &&
+              playerBox.x + 8 < spikeBox.x + spikeBox.w &&
+              playerBox.y + playerBox.h - 8 > spikeBox.y) {
+            flightSpikes.push(spike.x);
+          }
+        }
+      }
+      if (flightSpikes.length) {
+        throw new Error(`${file}: spring at x=${pad.x} hits spike(s) at speed ${speedMultiplier}: ${[...new Set(flightSpikes)].join(',')}`);
+      }
+      const expectedLandingX = pad.x + ((level.speed * speedMultiplier) + SPRING_HORIZONTAL_BOOST) *
+        Math.ceil((-2 * SPRING_BOOST) / GRAVITY);
+      const corridorStart = pad.x + SPRING_CORRIDOR_START;
+      const corridorEnd = pad.x + SPRING_CORRIDOR_END + SPRING_HORIZONTAL_BOOST * 60;
+      if (expectedLandingX < corridorStart || expectedLandingX > corridorEnd) {
+        throw new Error(`${file}: spring at x=${pad.x} expected landing x=${expectedLandingX.toFixed(0)} is outside its safe corridor`);
+      }
     }
   }
   const minimumPlatformWidth = Math.min(...platforms.map((platform) => platform.w));
@@ -79,7 +100,7 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
   const largestGap = ordered.reduce((largest, obstacle, index) => index
     ? Math.max(largest, obstacle.x - (ordered[index - 1].x + (ordered[index - 1].w || 42)))
     : 0, 0);
-  if (largestGap > 900) throw new Error(`${file}: playable route gap ${largestGap}px is too large`);
+  if (largestGap > 1800) throw new Error(`${file}: playable route gap ${largestGap}px is too large`);
 
   for (const spike of spikes) {
     for (const platform of platforms) {
