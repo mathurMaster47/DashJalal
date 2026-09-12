@@ -2,7 +2,7 @@ const fs = require('fs');
 
 const source = fs.readFileSync('index.html', 'utf8');
 for (const required of [
-  'const SECRET_TITLE_CLICKS = 7',
+  'const SECRET_TITLE_CLICKS = 20',
   'const SECRET_TITLE_TIMEOUT_MS = 1500',
   'function handleSecretTitleActivation',
   'id="secret-title"',
@@ -31,7 +31,7 @@ function titleUnlocks(clicks, inMainMenu = true) {
       continue;
     }
     count += 1;
-    if (count === 7) {
+    if (count === 20) {
       unlocked = true;
       count = 0;
     }
@@ -39,8 +39,9 @@ function titleUnlocks(clicks, inMainMenu = true) {
   return unlocked;
 }
 
-if (!titleUnlocks(Array(7).fill('title'))) throw new Error('Seven title clicks did not unlock');
-if (titleUnlocks(['title', 'title', 'level-20', 'title', 'title', 'title', 'title', 'title'])) {
+if (!titleUnlocks(Array(20).fill('title'))) throw new Error('Twenty title clicks did not unlock');
+if (titleUnlocks(Array(19).fill('title'))) throw new Error('Nineteen title clicks unlocked');
+if (titleUnlocks(['title', 'title', 'level-20', ...Array(18).fill('title')])) {
   throw new Error('Wrong-context click did not reset title count');
 }
 if (titleUnlocks([20, 12, 17])) throw new Error('Old level sequence unlocked speed selector');

@@ -534,7 +534,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.3.0';
+        const GAME_VERSION = 'v2.4.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -796,10 +796,19 @@
         const COINS_KEY = 'dash_total_coins';
         const COLLECTED_COINS_KEY = 'dash_collected_coins';
         const SHOP_KEY = 'dash_shop_purchases';
+        const REWARDS_MIGRATION_KEY = 'dash_rewards_migration';
+        const REWARDS_MIGRATION_VERSION = 'v2.4.0';
+        const UNLIMITED_COINS_KEY = 'dash_unlimited_coins';
+        if (localStorage.getItem(REWARDS_MIGRATION_KEY) !== REWARDS_MIGRATION_VERSION) {
+            localStorage.setItem(COINS_KEY, '0');
+            localStorage.setItem(COLLECTED_COINS_KEY, '[]');
+            localStorage.setItem(REWARDS_MIGRATION_KEY, REWARDS_MIGRATION_VERSION);
+        }
         let totalCoins = Math.max(0, parseInt(localStorage.getItem(COINS_KEY) || '0', 10) || 0);
         let collectedCoinIds = JSON.parse(localStorage.getItem(COLLECTED_COINS_KEY) || '[]');
         if (!Array.isArray(collectedCoinIds)) collectedCoinIds = [];
         let pendingCoinIds = [];
+        let unlimitedCoins = localStorage.getItem(UNLIMITED_COINS_KEY) === 'true';
         let purchasedShopItems = JSON.parse(localStorage.getItem(SHOP_KEY) || '{}');
         if (!purchasedShopItems || typeof purchasedShopItems !== 'object') purchasedShopItems = {};
 
@@ -845,8 +854,8 @@
             ['coin-display', 'menu-coin-display', 'shop-coin-display'].forEach((id) => {
                 const element = document.getElementById(id);
                 if (element) element.innerText = id === 'coin-display'
-                    ? `RUN: +${pendingCoinIds.length} • BANK: ${totalCoins}`
-                    : `COINS: ${totalCoins}`;
+                    ? `RUN: +${pendingCoinIds.length} • BANK: ${unlimitedCoins ? '∞' : totalCoins}`
+                    : `COINS: ${unlimitedCoins ? '∞ UNLIMITED' : totalCoins}`;
             });
         }
 
@@ -862,11 +871,11 @@
 
         updateCoinLabels();
 
-        const SECRET_TITLE_CLICKS = 7;
+        const SECRET_TITLE_CLICKS = 20;
         const SECRET_TITLE_TIMEOUT_MS = 1500;
         let secretTitleClicks = 0;
         let secretTitleResetTimer = null;
-        let speedSelectorUnlocked = false;
+        let speedSelectorUnlocked = unlimitedCoins;
 
         function handleSecretTitleActivation() {
             if (gameState !== 'MENU' || document.getElementById('main-menu').style.display === 'none') {
@@ -880,8 +889,13 @@
             }, SECRET_TITLE_TIMEOUT_MS);
             if (secretTitleClicks === SECRET_TITLE_CLICKS) {
                 secretTitleClicks = 0;
+                unlockedLevel = 20;
+                localStorage.setItem('dash_unlocked_lvl', '20');
                 speedSelectorUnlocked = true;
+                unlimitedCoins = true;
+                localStorage.setItem(UNLIMITED_COINS_KEY, 'true');
                 showSpeedSelector();
+                openLevelSelect();
             }
         }
 
@@ -897,26 +911,6 @@
         }
 
         document.getElementById('secret-title').addEventListener('click', handleSecretTitleActivation);
-
-        // Stealth easter egg sequence (4, 7, 2, 9, 19)
-        const easterEggSeq = [4, 7, 2, 9, 19];
-        let easterEggIndex = 0;
-
-        function checkEasterEgg(lvl) {
-            if (lvl === easterEggSeq[easterEggIndex]) {
-                easterEggIndex++;
-                if (easterEggIndex === easterEggSeq.length) {
-                    unlockedLevel = 20;
-                    localStorage.setItem('dash_unlocked_lvl', '20');
-                    easterEggIndex = 0;
-                    openLevelSelect();
-                }
-            } else if (lvl === easterEggSeq[0]) {
-                easterEggIndex = 1;
-            } else {
-                easterEggIndex = 0;
-            }
-        }
 
         let cameraX = 0;
         let levelLength = 12000;
@@ -1123,6 +1117,7 @@
             document.getElementById('character-menu').style.display = 'none';
             document.getElementById('shop-menu').style.display = 'none';
             document.getElementById('level-select-menu').style.display = 'block';
+            if (speedSelectorUnlocked) showSpeedSelector();
             
             const grid = document.getElementById('level-grid');
             grid.innerHTML = '';
@@ -1133,7 +1128,6 @@
                 btn.innerText = i;
                 
                 btn.onclick = () => {
-                    checkEasterEgg(i);
                     if (i <= unlockedLevel) {
                         startLevel(i);
                     }
@@ -1226,17 +1220,17 @@
 
         function purchaseOrEquipShopItem(item) {
             if (!isShopItemOwned(item)) {
-                if (totalCoins < item.price) {
+                if (!unlimitedCoins && totalCoins < item.price) {
                     buildShopUI(`Need ${item.price - totalCoins} more coin${item.price - totalCoins === 1 ? '' : 's'} for ${item.name}.`);
                     return;
                 }
-                totalCoins -= item.price;
+                if (!unlimitedCoins) totalCoins -= item.price;
                 purchasedShopItems[item.id] = true;
                 saveRewardState();
             }
             avatarConfig[item.type] = item.value;
             saveAndRefreshAvatar();
-            buildShopUI(`${item.name} ${isShopItemOwned(item) ? 'equipped' : 'unlocked'}!`);
+            buildShopUI(`${item.name} ${isShopItemOwned(item) ? 'equipped' : 'unlocked'}${unlimitedCoins ? ' • UNLIMITED COINS' : ''}!`);
         }
 
         function buildCharacterUI() {

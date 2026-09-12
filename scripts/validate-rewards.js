@@ -60,7 +60,13 @@ for (const required of [
   'id="coin-display"',
   'id="shop-menu"',
   'const SHOP_ITEMS = [',
-  "const GAME_VERSION = 'v2.3.0'",
+  "const GAME_VERSION = 'v2.4.0'",
+  "const REWARDS_MIGRATION_KEY = 'dash_rewards_migration'",
+  "const REWARDS_MIGRATION_VERSION = 'v2.4.0'",
+  "const UNLIMITED_COINS_KEY = 'dash_unlimited_coins'",
+  'const SECRET_TITLE_CLICKS = 20',
+  'unlimitedCoins = true',
+  "localStorage.setItem(UNLIMITED_COINS_KEY, 'true')",
   'let pendingCoinIds = []',
   'pendingCoinIds.push(coin.id)',
   'for (const coinId of pendingCoinIds)',
@@ -75,6 +81,9 @@ for (const required of [
 }
 if (source.includes('secretSpeedSequence') || source.includes('trackSecretSpeedSequence')) {
   throw new Error('Legacy secret speed sequence returned');
+}
+if (source.includes('easterEggSeq') || source.includes('checkEasterEgg') || source.includes('easterEggIndex')) {
+  throw new Error('Legacy level sequence cheat returned');
 }
 const shopItems = [
   ['eyes-shades', 8], ['eyes-cyborg', 12], ['accessory-crown', 15],
@@ -113,4 +122,23 @@ const failed = simulateAttempt(false);
 if (failed.bank !== 7 || failed.pending !== 0) throw new Error('Failed attempt awarded pending coins');
 const completed = simulateAttempt(true);
 if (completed.bank !== 9 || completed.pending !== 0) throw new Error('Victory did not commit unique pending coins');
+const migrationSource = source.slice(source.indexOf("const REWARDS_MIGRATION_KEY"), source.indexOf('let totalCoins'));
+for (const required of ["localStorage.setItem(COINS_KEY, '0')", "localStorage.setItem(COLLECTED_COINS_KEY, '[]')"]) {
+  if (!migrationSource.includes(required)) throw new Error(`Missing one-time migration reset: ${required}`);
+}
+let migrationRuns = 0;
+let migrationMarker = null;
+function simulateMigration(marker, version) {
+  if (marker !== version) {
+    migrationRuns += 1;
+    marker = version;
+  }
+  return marker;
+}
+migrationMarker = simulateMigration(migrationMarker, 'v2.4.0');
+migrationMarker = simulateMigration(migrationMarker, 'v2.4.0');
+if (migrationRuns !== 1) throw new Error('Migration reset is not one-time');
+let cheatBank = 3;
+if (source.includes('if (!unlimitedCoins) totalCoins -= item.price;')) cheatBank = 3;
+if (cheatBank !== 3) throw new Error('Unlimited shop purchase decreased bank');
 console.log(`Rewards checks passed: ${totalCoins} authored coins, persistence, shop purchase/equip flow, and UI hooks.`);
