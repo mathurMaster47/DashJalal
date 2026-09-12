@@ -20,11 +20,14 @@ for (const required of [
   "document.getElementById('shop-menu').style.display = 'none';",
   "document.getElementById('main-menu').style.display = 'none';",
   "document.getElementById('main-menu').style.display = 'block';",
-  "const GAME_VERSION = 'v2.4.0'",
+  "const GAME_VERSION = 'v2.5.0'",
   'function drawShopItemPreview',
   'className = \'shop-preview\'',
   'const previewConfig = { ...avatarConfig, [item.type]: item.value }',
-  'drawAvatarFeatures(previewCtx, 0, 0, size, previewConfig)'
+  'drawAvatarFeatures(previewCtx, 0, 0, size, previewConfig)',
+  'function forgetCheat()',
+  'id="forget-cheat-btn"',
+  "onclick=\"forgetCheat()\""
 ]) {
   if (!source.includes(required)) throw new Error(`Missing shop navigation wiring: ${required}`);
 }

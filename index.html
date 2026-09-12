@@ -235,6 +235,13 @@
         }
         .shop-item button:disabled { opacity: 0.55; cursor: not-allowed; }
         #shop-feedback { min-height: 24px; color: #a7ff3f; font-weight: 700; }
+        #forget-cheat-btn {
+            display: none;
+            margin: 0 auto 14px;
+            border-color: #ff3864;
+            color: #ffd7e0;
+        }
+        #forget-cheat-btn.visible { display: inline-block; }
 
         .level-btn:hover:not(.locked), .char-btn:hover {
             background: linear-gradient(135deg, #00f6ff, #ff0088, #a7ff3f);
@@ -494,6 +501,7 @@
             <div class="hud-text" id="shop-coin-display" style="display: inline-block;">COINS: 0</div>
             <div class="shop-grid" id="shop-grid"></div>
             <div id="shop-feedback" aria-live="polite"></div>
+            <button class="small-btn" id="forget-cheat-btn" onclick="forgetCheat()">FORGET CHEAT</button>
             <button class="btn btn-secondary" onclick="closeShop()">BACK</button>
         </div>
 
@@ -534,7 +542,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.4.0';
+        const GAME_VERSION = 'v2.5.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -603,6 +611,19 @@
             document.querySelectorAll('.speed-choice').forEach((button) => {
                 button.classList.toggle('active', button.dataset.speed === speedMode);
             });
+        }
+
+        function forgetCheat() {
+            if (!unlimitedCoins) return;
+            if (!window.confirm('Forget unlimited coins and return to normal rewards? Legitimate coins, levels, purchases, and avatar items will be preserved.')) {
+                return;
+            }
+            unlimitedCoins = false;
+            speedSelectorUnlocked = false;
+            localStorage.removeItem(UNLIMITED_COINS_KEY);
+            hideSpeedSelector();
+            updateCoinLabels();
+            buildShopUI('Cheat forgotten. Normal coin earning restored; legitimate progress preserved.');
         }
 
         function toggleResponsiveMode() {
@@ -1175,6 +1196,11 @@
             if (!grid) return;
             grid.innerHTML = '';
             document.getElementById('shop-feedback').innerText = feedback;
+            const forgetButton = document.getElementById('forget-cheat-btn');
+            if (forgetButton) {
+                forgetButton.classList.toggle('visible', unlimitedCoins);
+                forgetButton.setAttribute('aria-hidden', String(!unlimitedCoins));
+            }
             SHOP_ITEMS.forEach((item) => {
                 const owned = isShopItemOwned(item);
                 const card = document.createElement('div');

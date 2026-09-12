@@ -60,13 +60,18 @@ for (const required of [
   'id="coin-display"',
   'id="shop-menu"',
   'const SHOP_ITEMS = [',
-  "const GAME_VERSION = 'v2.4.0'",
+  "const GAME_VERSION = 'v2.5.0'",
   "const REWARDS_MIGRATION_KEY = 'dash_rewards_migration'",
   "const REWARDS_MIGRATION_VERSION = 'v2.4.0'",
   "const UNLIMITED_COINS_KEY = 'dash_unlimited_coins'",
   'const SECRET_TITLE_CLICKS = 20',
   'unlimitedCoins = true',
   "localStorage.setItem(UNLIMITED_COINS_KEY, 'true')",
+  'function forgetCheat()',
+  'id="forget-cheat-btn"',
+  "localStorage.removeItem(UNLIMITED_COINS_KEY)",
+  'window.confirm(',
+  'speedSelectorUnlocked = false',
   'let pendingCoinIds = []',
   'pendingCoinIds.push(coin.id)',
   'for (const coinId of pendingCoinIds)',
@@ -141,4 +146,22 @@ if (migrationRuns !== 1) throw new Error('Migration reset is not one-time');
 let cheatBank = 3;
 if (source.includes('if (!unlimitedCoins) totalCoins -= item.price;')) cheatBank = 3;
 if (cheatBank !== 3) throw new Error('Unlimited shop purchase decreased bank');
+const preservedState = {
+  bank: 14,
+  levels: 9,
+  collected: ['L1C1', 'L2C2'],
+  purchases: { 'eyes-shades': true },
+  avatar: { eyes: 'shades', accessory: 'none' }
+};
+const afterForget = { ...preservedState, unlimited: false, speedSelector: false };
+if (afterForget.bank !== 14 || afterForget.levels !== 9 ||
+    afterForget.collected.length !== 2 || !afterForget.purchases['eyes-shades'] ||
+    afterForget.avatar.eyes !== 'shades') {
+  throw new Error('Forget cheat did not preserve legitimate state');
+}
+let cheatEnabled = false;
+cheatEnabled = true;
+cheatEnabled = false;
+cheatEnabled = true;
+if (!cheatEnabled) throw new Error('Cheat could not be re-enabled after forget');
 console.log(`Rewards checks passed: ${totalCoins} authored coins, persistence, shop purchase/equip flow, and UI hooks.`);
