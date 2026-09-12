@@ -42,7 +42,7 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
 
 const source = fs.readFileSync('index.html', 'utf8');
 for (const required of [
-  "const GAME_VERSION = 'v2.9.0'",
+  "const GAME_VERSION = 'v2.9.1'",
   'let checkpointPositions = []',
   'let checkpointSpawnPositions = []',
   'let latestCheckpointIndex = -1',
@@ -54,7 +54,9 @@ for (const required of [
   'checkpointSpawnPositions[latestCheckpointIndex]',
   'player.y = GROUND_Y - PLAYER_SIZE',
   'let checkpointProtectionSeconds = 0',
-  'checkpointProtectionSeconds = 3',
+  'const CHECKPOINT_PROTECTION_SECONDS = 3',
+  'checkpointProtectionSeconds = CHECKPOINT_PROTECTION_SECONDS',
+  'checkpointProtectionSeconds = Math.max(0, checkpointProtectionSeconds - deltaSeconds)',
   'if (checkpointProtectionSeconds > 0) return',
   'PROTECTED',
   'Math.floor(checkpointProtectionSeconds * 10) % 2',
@@ -77,6 +79,24 @@ if (!retryFunction.includes('checkpointPositions[latestCheckpointIndex]') ||
     !retryFunction.includes('player.x = checkpointSpawnPositions[latestCheckpointIndex] || resumeX') ||
     !retryFunction.includes('player.y = GROUND_Y - PLAYER_SIZE')) {
   throw new Error('Checkpoint retry does not restore checkpoint position and safe grounded state');
+}
+const updateFunction = source.slice(source.indexOf('function update('), source.indexOf('function draw('));
+if (!updateFunction.includes('checkpointProtectionSeconds = Math.max(0, checkpointProtectionSeconds - deltaSeconds)')) {
+  throw new Error('Checkpoint protection timer is not decremented during gameplay updates');
+}
+if (source.slice(source.indexOf('function triggerVictory'), source.indexOf('function update(')).includes('checkpointProtectionSeconds = Math.max(0, checkpointProtectionSeconds - deltaSeconds)')) {
+  throw new Error('Checkpoint protection timer must not be decremented by victory handling');
+}
+const startFunction = source.slice(source.indexOf('function startLevel'), source.indexOf('function retryLevel'));
+if (!startFunction.includes('checkpointProtectionSeconds = 0')) {
+  throw new Error('Normal level starts must clear checkpoint protection');
+}
+const resetFunction = source.slice(source.indexOf('function resetLevelAttempt'), source.indexOf('function handleMenuAction'));
+if (!resetFunction.includes('checkpointProtectionSeconds = 0')) {
+  throw new Error('Reset level must clear checkpoint protection');
+}
+if (!source.includes("gameState = 'DEAD'") || !source.includes("gameState = 'GAMEOVER'")) {
+  throw new Error('Ordinary death must transition through DEAD to GAMEOVER');
 }
 if (!source.includes("gameState === 'GAMEOVER' && e.type !== 'mousedown'")) {
   throw new Error('Global mousedown handler can override checkpoint retry');

@@ -544,7 +544,8 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.9.0';
+        const GAME_VERSION = 'v2.9.1';
+        const CHECKPOINT_PROTECTION_SECONDS = 3;
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -1397,6 +1398,7 @@
         function startLevel(lvl) {
             currentLevel = lvl;
             pendingCoinIds = [];
+            checkpointProtectionSeconds = 0;
             generateLevel(currentLevel);
             player.reset();
             cameraX = 0;
@@ -1438,7 +1440,7 @@
             cameraX = player.x - 220;
             jumpInput = false;
             jumpBufferSeconds = 0;
-            checkpointProtectionSeconds = 3;
+            checkpointProtectionSeconds = CHECKPOINT_PROTECTION_SECONDS;
             gameState = 'PLAYING';
             document.getElementById('menu').style.display = 'none';
             document.getElementById('hud-top').style.display = 'flex';
@@ -1495,14 +1497,6 @@
 
         function triggerVictory() {
             if (gameState !== 'PLAYING') return;
-            checkpointProtectionSeconds = Math.max(0, checkpointProtectionSeconds - deltaSeconds);
-            const protectionDisplay = document.getElementById('protection-display');
-            if (protectionDisplay) {
-                protectionDisplay.style.display = checkpointProtectionSeconds > 0 ? 'block' : 'none';
-                protectionDisplay.innerText = checkpointProtectionSeconds > 0
-                    ? `PROTECTED ${checkpointProtectionSeconds.toFixed(1)}s`
-                    : '';
-            }
             for (const coinId of pendingCoinIds) {
                 if (!collectedCoinIds.includes(coinId)) collectedCoinIds.push(coinId);
             }
@@ -1547,6 +1541,15 @@
             }
 
             if (gameState !== 'PLAYING') return;
+
+            checkpointProtectionSeconds = Math.max(0, checkpointProtectionSeconds - deltaSeconds);
+            const protectionDisplay = document.getElementById('protection-display');
+            if (protectionDisplay) {
+                protectionDisplay.style.display = checkpointProtectionSeconds > 0 ? 'block' : 'none';
+                protectionDisplay.innerText = checkpointProtectionSeconds > 0
+                    ? `PROTECTED ${checkpointProtectionSeconds.toFixed(1)}s`
+                    : '';
+            }
 
             player.x += levelSpeed * deltaSeconds;
             cameraX = player.x - 220;
