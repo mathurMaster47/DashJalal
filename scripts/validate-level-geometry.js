@@ -43,6 +43,10 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
   const conflicts = [];
   if (!platforms.length) throw new Error(`${file}: authored layout has no platform surfaces`);
   if (!spikes.length) throw new Error(`${file}: authored layout has no spike challenge`);
+  const minimumPlatformWidth = Math.min(...platforms.map((platform) => platform.w));
+  const averagePlatformWidth = platforms.reduce((sum, platform) => sum + platform.w, 0) / platforms.length;
+  if (minimumPlatformWidth < 80) throw new Error(`${file}: platform segment is too small (${minimumPlatformWidth}px)`);
+  if (averagePlatformWidth < 125) throw new Error(`${file}: average platform footprint is too small (${averagePlatformWidth.toFixed(1)}px)`);
   if (level.obstacles.length < baselineObstacleCounts[levelNumber - 1] * 3) throw new Error(`${file}: obstacle density did not scale`);
   const lastObstacle = Math.max(...level.obstacles.map((obstacle) => obstacle.x + (obstacle.w || 42)));
   if (lastObstacle < level.length - 700) throw new Error(`${file}: empty tail after final obstacle`);

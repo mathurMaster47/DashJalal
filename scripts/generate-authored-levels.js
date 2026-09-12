@@ -31,12 +31,12 @@ function addSpike(obstacles, x, count, gap) {
   for (let index = 0; index < count; index += 1) {
     obstacles.push({ type: 'spike', x: x + index * gap, w: 42, h: 48 });
   }
-  return x + count * gap + 150;
+  return x + count * gap + 175;
 }
 
 function addPlatform(obstacles, x, y, width) {
   obstacles.push({ type: 'platform', x, y, w: width, h: 20 });
-  return x + width + 90;
+  return x + width + 105;
 }
 
 function buildLevel(number) {
@@ -59,22 +59,22 @@ function buildLevel(number) {
       x += 220 + (pass % 3) * 35;
     } else if (kind === 'platform') {
       const height = Math.max(-190, Math.min(-20, value + direction * pass * 12));
-      const width = Math.max(72, widthOrRise + ((pass % 3) - 1) * 18);
+      const width = Math.max(130, Math.round(widthOrRise * 1.35) + ((pass % 3) - 1) * 24);
       x = addPlatform(obstacles, x, height, width);
       if (sectionIndex % 2 === 0) x += 90;
     } else if (kind === 'stair') {
       const steps = value;
       const rise = widthOrRise * direction + (pass % 2 === 0 ? pass * 3 : -pass * 2);
-      const width = Math.max(72, 142 - number * 2 + ((pass % 3) - 1) * 12);
+      const width = Math.max(145, 220 - number * 2 + ((pass % 3) - 1) * 24);
       for (let step = 0; step < steps; step += 1) {
         const height = Math.max(-210, Math.min(-20, -20 - step * rise));
         x = addPlatform(obstacles, x, height, width);
       }
-      x += 75 + pass * 18;
+      x += 100 + pass * 22;
     }
     x += 30 + (number % 3) * 12 + pass * 8;
     });
-    x += 180 + (pass % 3) * 45;
+    x += 220 + (pass % 3) * 55;
     pass += 1;
   }
 
@@ -87,7 +87,7 @@ function buildLevel(number) {
     obstacles.push({ type: 'spike', x: fillerX, w: 42, h: 48 });
     lastEnd = fillerX + 42;
   }
-  x = addSpike(obstacles, targetLength - 260, 2 + (number % 3), 48);
+  x = addSpike(obstacles, targetLength - 280, 2 + (number % 3), 56);
   const length = targetLength;
 
   // Remove the platform span under each spike plus visual clearance.
@@ -105,8 +105,8 @@ function buildLevel(number) {
       spans = spans.flatMap(([start, end]) => {
         if (cutEnd <= start || cutStart >= end) return [[start, end]];
         return [
-          ...(cutStart - start >= 48 ? [[start, cutStart]] : []),
-          ...(end - cutEnd >= 48 ? [[cutEnd, end]] : []),
+          ...(cutStart - start >= 80 ? [[start, cutStart]] : []),
+          ...(end - cutEnd >= 80 ? [[cutEnd, end]] : []),
         ];
       });
     }
