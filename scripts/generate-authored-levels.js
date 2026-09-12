@@ -43,31 +43,40 @@ function buildLevel(number) {
   const [name, recipe] = LEVELS[number - 1];
   const obstacles = [];
   let x = 900 + number * 35;
-  recipe.forEach((section, sectionIndex) => {
+  const passes = 6 + ((number - 1) % 3);
+  for (let pass = 0; pass < passes; pass += 1) {
+    const direction = pass % 2 === 0 ? 1 : -1;
+    recipe.forEach((section, sectionIndex) => {
     const [kind, value, widthOrRise] = section;
+    const variation = pass + sectionIndex;
     if (kind === 'spike' || kind === 'ground') {
-      x = addSpike(obstacles, x, value || 1, kind === 'ground' ? 54 : 48);
+      const count = Math.min(5, (value || 1) + (pass >= 3 && kind === 'spike' && variation % 3 === 0 ? 1 : 0));
+      x = addSpike(obstacles, x, count, kind === 'ground' ? 54 : 48 - Math.min(8, pass * 2));
     } else if (kind === 'pad') {
       obstacles.push({ type: 'pad', x, w: 44, h: 14 });
-      x += 250;
+      x += 220 + (pass % 3) * 35;
     } else if (kind === 'platform') {
-      x = addPlatform(obstacles, x, value, widthOrRise);
+      const height = Math.max(-190, Math.min(-20, value + direction * pass * 12));
+      const width = Math.max(72, widthOrRise + ((pass % 3) - 1) * 18);
+      x = addPlatform(obstacles, x, height, width);
       if (sectionIndex % 2 === 0) x += 90;
     } else if (kind === 'stair') {
       const steps = value;
-      const rise = widthOrRise;
-      const width = Math.max(78, 142 - number * 2);
+      const rise = widthOrRise * direction + (pass % 2 === 0 ? pass * 3 : -pass * 2);
+      const width = Math.max(72, 142 - number * 2 + ((pass % 3) - 1) * 12);
       for (let step = 0; step < steps; step += 1) {
-        x = addPlatform(obstacles, x, -20 - step * rise, width);
+        const height = Math.max(-210, Math.min(-20, -20 - step * rise));
+        x = addPlatform(obstacles, x, height, width);
       }
-      x += 100;
+      x += 75 + pass * 18;
     }
-    x += 30 + (number % 3) * 12;
-  });
+    x += 30 + (number % 3) * 12 + pass * 8;
+    });
+    x += 180 + (pass % 3) * 45;
+  }
 
-  // Add a distinct finale without reusing the old repeating pattern.
-  x = addSpike(obstacles, x, 1 + (number % 3), 48);
-  const length = x + 650;
+  x = addSpike(obstacles, x, 2 + (number % 3), 48);
+  const length = x + 420;
 
   // Remove the platform span under each spike plus visual clearance.
   const spikes = obstacles.filter((obstacle) => obstacle.type === 'spike');
@@ -101,6 +110,7 @@ function buildLevel(number) {
     speed: Number((7.7 + number * 0.19).toFixed(2)),
     length,
     difficulty: number,
+    routePasses: passes,
     obstacles: split,
   };
 }
