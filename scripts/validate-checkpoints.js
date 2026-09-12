@@ -20,13 +20,29 @@ for (let levelNumber = 1; levelNumber <= 20; levelNumber += 1) {
     }
     if (position <= 0 || position >= level.length) throw new Error(`${file}: checkpoint outside route`);
     if (index > 0 && position <= checkpoints[index - 1]) throw new Error(`${file}: checkpoints out of order`);
-  });
+      let spawn = position;
+      const obstacles = level.obstacles || [];
+      while (obstacles.some((object) => {
+        const width = object.w || 42;
+        return object.x < spawn + 110 && object.x + width > spawn - 70;
+      })) {
+        spawn += 140;
+      }
+      if (spawn >= level.length - 120) throw new Error(`${file}: checkpoint ${index + 1} buffer reaches level end`);
+      const nextObstacle = obstacles
+        .map((object) => object.x)
+        .filter((x) => x > spawn)
+        .sort((a, b) => a - b)[0];
+      if (nextObstacle && nextObstacle - spawn > 900) {
+        throw new Error(`${file}: checkpoint ${index + 1} next challenge is too far away`);
+      }
+    });
   levelCount += 1;
 }
 
 const source = fs.readFileSync('index.html', 'utf8');
 for (const required of [
-  "const GAME_VERSION = 'v2.8.0'",
+  "const GAME_VERSION = 'v2.9.0'",
   'let checkpointPositions = []',
   'let checkpointSpawnPositions = []',
   'let latestCheckpointIndex = -1',
@@ -37,6 +53,11 @@ for (const required of [
   'player.x = checkpointSpawnPositions[latestCheckpointIndex] || resumeX',
   'checkpointSpawnPositions[latestCheckpointIndex]',
   'player.y = GROUND_Y - PLAYER_SIZE',
+  'let checkpointProtectionSeconds = 0',
+  'checkpointProtectionSeconds = 3',
+  'if (checkpointProtectionSeconds > 0) return',
+  'PROTECTED',
+  'Math.floor(checkpointProtectionSeconds * 10) % 2',
   'progress-display',
   'id="reset-level-btn"',
   'latestCheckpointIndex = i',

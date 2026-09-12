@@ -426,6 +426,7 @@
                 <div class="hud-text" id="level-display">LEVEL 1</div>
                 <div class="hud-text" id="progress-display">0%</div>
                 <div class="hud-text" id="coin-display">COINS: 0</div>
+                <div class="hud-text" id="protection-display" style="display:none;">PROTECTED 3.0s</div>
             </div>
         </div>
 
@@ -543,7 +544,7 @@
 
         const BASE_WIDTH = 1280;
         const BASE_HEIGHT = 720;
-        const GAME_VERSION = 'v2.8.0';
+        const GAME_VERSION = 'v2.9.0';
         document.getElementById('version-label').textContent = GAME_VERSION;
 
         function resizeCanvas() {
@@ -943,6 +944,7 @@
         let checkpointPositions = [];
         let checkpointSpawnPositions = [];
         let latestCheckpointIndex = -1;
+        let checkpointProtectionSeconds = 0;
         let levelTheme = { bg1: '#1f0d3d', bg2: '#0a0518', accent: '#00f0ff', spike: '#ff0055', block: '#140c2b' };
 
         const themes = [
@@ -1071,6 +1073,7 @@
             checkpointPositions = [];
             checkpointSpawnPositions = [];
             latestCheckpointIndex = -1;
+            checkpointProtectionSeconds = 0;
 
             const levelData = (window.LEVELS && window.LEVELS[lvlNum]) || null;
             if (levelData) {
@@ -1378,6 +1381,7 @@
             checkpointPositions = [];
             checkpointSpawnPositions = [];
             latestCheckpointIndex = -1;
+            checkpointProtectionSeconds = 0;
             stopPhonkMusic();
             gameState = 'MENU';
             document.getElementById('hud-top').style.display = 'none';
@@ -1410,6 +1414,7 @@
             document.getElementById('level-display').innerText = `LEVEL ${currentLevel}`;
             document.getElementById('progress-display').innerText = '0%';
             document.getElementById('reset-level-btn').style.display = 'none';
+            document.getElementById('protection-display').style.display = 'none';
             updateCoinLabels();
 
             startPhonkMusic();
@@ -1433,6 +1438,7 @@
             cameraX = player.x - 220;
             jumpInput = false;
             jumpBufferSeconds = 0;
+            checkpointProtectionSeconds = 3;
             gameState = 'PLAYING';
             document.getElementById('menu').style.display = 'none';
             document.getElementById('hud-top').style.display = 'flex';
@@ -1444,6 +1450,8 @@
         }
 
         function resetLevelAttempt() {
+            checkpointProtectionSeconds = 0;
+            document.getElementById('protection-display').style.display = 'none';
             retryLevel();
         }
 
@@ -1467,6 +1475,7 @@
 
         function triggerDeath() {
             if (gameState !== 'PLAYING') return;
+            if (checkpointProtectionSeconds > 0) return;
             gameState = 'DEAD';
             stopPhonkMusic();
             playSound('death');
@@ -1486,6 +1495,14 @@
 
         function triggerVictory() {
             if (gameState !== 'PLAYING') return;
+            checkpointProtectionSeconds = Math.max(0, checkpointProtectionSeconds - deltaSeconds);
+            const protectionDisplay = document.getElementById('protection-display');
+            if (protectionDisplay) {
+                protectionDisplay.style.display = checkpointProtectionSeconds > 0 ? 'block' : 'none';
+                protectionDisplay.innerText = checkpointProtectionSeconds > 0
+                    ? `PROTECTED ${checkpointProtectionSeconds.toFixed(1)}s`
+                    : '';
+            }
             for (const coinId of pendingCoinIds) {
                 if (!collectedCoinIds.includes(coinId)) collectedCoinIds.push(coinId);
             }
@@ -1599,6 +1616,7 @@
 
                 if (obj.x < cameraX - 100 || obj.x > cameraX + BASE_WIDTH + 100) continue;
 
+                if (checkpointProtectionSeconds > 0) continue;
                 if (obj.type === 'spike') {
                     const margin = 8;
                     if (player.x + PLAYER_SIZE - margin > obj.x &&
@@ -1887,7 +1905,7 @@
             }
             ctx.globalAlpha = 1.0;
 
-            if (gameState !== 'DEAD') {
+            if (gameState !== 'DEAD' && (checkpointProtectionSeconds <= 0 || Math.floor(checkpointProtectionSeconds * 10) % 2 === 0)) {
                 ctx.save();
                 ctx.translate(player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE / 2);
                 ctx.rotate((player.rotation * Math.PI) / 180);
