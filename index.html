@@ -727,8 +727,9 @@
                 normalized.y = GROUND_Y;
             } else if (normalized.type === 'pad') {
                 normalized.y = GROUND_Y - (normalized.h || 14);
-            } else if (normalized.type === 'block') {
+            } else if (normalized.type === 'platform' || normalized.type === 'block') {
                 normalized.y = GROUND_Y + (normalized.y || 0);
+                normalized.h = normalized.h || 20;
             }
             return normalized;
         }
@@ -778,14 +779,14 @@
                     const padX = currX;
                     levelObjects.push({ type: 'pad', x: padX, y: GROUND_Y, w: 44, h: 14 });
                     levelObjects.push({ type: 'spike', x: padX + 180, y: GROUND_Y, w: 42, h: 48 });
-                    levelObjects.push({ type: 'block', x: padX + 240, y: GROUND_Y - (80 + (lvlNum % 3) * 10), w: 150, h: 80 });
+                    levelObjects.push({ type: 'platform', x: padX + 240, y: -80 - (lvlNum % 3) * 10, w: 150, h: 20 });
                     currX += Math.max(350, 480 - (lvlNum * 8));
                 } else {
-                    const bW = 140;
-                    const bH = 50 + ((lvlNum * 3) % 40);
-                    levelObjects.push({ type: 'block', x: currX, y: GROUND_Y - bH, w: bW, h: bH });
-                    levelObjects.push({ type: 'spike', x: currX + 45, y: GROUND_Y - bH, w: 42, h: 48 });
-                    currX += bW + Math.max(250, 350 - (lvlNum * 5));
+                    const platformW = 140;
+                    const platformY = -20 - ((lvlNum * 3) % 3) * 38;
+                    levelObjects.push({ type: 'platform', x: currX, y: platformY, w: platformW, h: 20 });
+                    levelObjects.push({ type: 'spike', x: currX + 45, y: GROUND_Y, w: 42, h: 48 });
+                    currX += platformW + Math.max(250, 350 - (lvlNum * 5));
                 }
             }
         }
@@ -1076,7 +1077,7 @@
                         triggerDeath();
                         return;
                     }
-                } else if (obj.type === 'block') {
+                } else if (obj.type === 'platform' || obj.type === 'block') {
                     if (checkCollision(pBox, obj)) {
                         if (player.vy > 0 && player.y + PLAYER_SIZE - player.vy <= obj.y + 12) {
                             player.y = obj.y - PLAYER_SIZE;
@@ -1243,7 +1244,7 @@
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 2;
                     ctx.stroke();
-                } else if (obj.type === 'block') {
+                } else if (obj.type === 'platform' || obj.type === 'block') {
                     ctx.fillStyle = levelTheme.block;
                     ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
                     ctx.strokeStyle = levelTheme.accent;
